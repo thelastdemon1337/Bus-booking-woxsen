@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Woxsen Staff</title>
+    <link rel="stylesheet" href="/static/css/staff_home.css" />
+  </head>
+  <body>
+    <div class="nav-bar">
+      <div class="nav-heading">
+        <a href="">Woxsen</a>
+      </div>
+
+      <div class="nav-items">
+        <div class="nav-item">
+          <a href="/logout">Logout</a>
+        </div>
+      </div>
+    </div>
+    <div id="staff_home">
+      <div class="container" style="margin-top: 10px">
+        <h1>Woxsen Student Transportation</h1>
+        <table class="rwd-table">
+          <tbody>
+            <tr>
+              <th>Travel Date</th>
+              <th>Bus No</th>
+              <th>Total Seats</th>
+              <th>Fare</th>
+              <th>Total seats Booked</th>
+              <th>CSV File</th>
+              <th>Update Changes</th>
+            </tr>
+            {% for bus_number,value in data.items() %} {% for travel_date, seats
+            in value.items()%}
+            <tr>
+              <td data-th="Supplier Code">{{travel_date}}</td>
+              <td data-th="Supplier Name">{{bus_number}}</td>
+              <td data-th="Invoice Number">
+                <input
+                  type="number"
+                  class="seats-input"
+                  value="{{seats[1]}}"
+                  data-date="{{travel_date}}"
+                  data-seats="{{seats[1]}}"
+                />
+              </td>
+              <td data-th="Invoice Number">
+                <input
+                  type="number"
+                  class="fare-input"
+                  value="{{seats[-1]}}"
+                  data-fare="{{seats[-1]}}"
+                  data-bus="{{bus_number}}"
+                />
+              </td>
+              <td data-th="Invoice Number">{{seats[0]}}</td>
+              <td data-th="Invoice Number">
+                <a
+                  href="/csv?date={{travel_date}}&bus_number={{bus_number}}"
+                  download
+                >
+                  Download
+                </a>
+              </td>
+              <td>
+                <button data-date="{{travel_date}}" data-bus="{{bus_number}}" class="disabled">
+                  save
+                </button>
+              </td>
+            </tr>
+            {% endfor %} {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      // get all the input fields class name seats-input and type number
+      const inputs = document.querySelectorAll(".seats-input");
+      const buttons = document.querySelectorAll("button");
+
+      const fareInputs = document.querySelectorAll(".fare-input");
+
+      // add event listener to each input field
+      inputs.forEach((input) => {
+        input.addEventListener("input", (e) => {
+          // data attribute
+          const date = e.target.getAttribute("data-date");
+          const seats = e.target.getAttribute("data-seats");
+
+          // get the button with the same date attribute
+          const button = document.querySelector(`button[data-date="${date}"]`);
+
+
+          if (seats === e.target.value) {
+            // add disabled class 
+            if (button.classList.contains("disabled")) return
+            button.classList.add("disabled");
+            return;
+          } else {
+            // remove disabled class
+            if (!button.classList.contains("disabled")) return
+            button.classList.remove("disabled");
+          }
+        });
+      });
+
+      fareInputs.forEach((e) => {
+        e.addEventListener("input", (e) => {
+          // data attribute
+          const bus_number = e.target.getAttribute("data-bus");
+          const fare = e.target.getAttribute("data-fare");
+
+          // get the button with the same date attribute
+          const button = document.querySelector(`button[data-bus="${bus_number}"]`);
+
+          if (fare === e.target.value) {
+            // add disabled class
+            if (button.classList.contains("disabled")) return
+            button.classList.add("disabled");
+            return;
+          } else {
+            // remove disabled class
+            if (!button.classList.contains("disabled")) return
+            button.classList.remove("disabled");
+          }
+        });
+      })
+
+      buttons.forEach((button) => {
+        button.addEventListener("click", (e) => {
+          // if button has disabled class return
+          if (button.classList.contains("disabled")) return;
+
+          // data attribute
+          const date = e.target.getAttribute("data-date");
+
+          // get the button with the same date attribute
+          const input = document.querySelector(`input[data-date="${date}"]`);
+          
+          
+          // get the fare input
+          fareInput = document.querySelector(`input[data-bus="${button.getAttribute("data-bus")}"]`)
+          
+          const bus_number = fareInput.getAttribute("data-bus");
+
+          // if input value is greater than 40 return
+          if (input.value > 40) {
+            alert("Seats cannot be greater than 40");
+            input.value = input.getAttribute("data-seats");
+            return;
+          }
+
+          // if input value is less than 0 return
+          if (input.value < 0) {
+            alert("Seats cannot be less than 0");
+            return;
+          }
+
+          fetch(`/update-bus-info?date=${date}&bus_number=${bus_number}&seats=${input.value}&fare=${fareInput.value}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.status === "success") {
+                alert("Seats updated successfully");
+                input.setAttribute("data-seats", input.value);
+                button.classList.add("disabled");
+              } else {
+                alert("Something went wrong");
+              }
+            });
+        });
+      });
+    </script>
+  </body>
+</html>

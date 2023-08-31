@@ -1,0 +1,36 @@
+{# templates/login.html #} {% extends "layout.html" %} {% block content %}
+
+<div class="form-content">
+  <h1>Woxsen Login</h1>
+  <div class="form">
+    <form method="post">
+      <input type="email" name="email" placeholder="Email" />
+      <input type="password" name="password" placeholder="Password" />
+      <button type="submit" >Login</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const inputEmail = document.querySelector('input[name="email"]');
+  const inputPassword = document.querySelector('input[name="password"]');
+  const btnLogin = document.querySelector("button[type='submit']");
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = inputEmail.value;
+    const password = inputPassword.value;
+
+    // validate email
+    if (!validateEmail(email)) {
+      toggleSnackbar("Enter a valid email address");
+      btnLogin.classList.remove("btn-disabled");
+      return false;
+    }
+
+    // submit form
+    form.submit();
+  });
+</script>
+{% endblock content %}

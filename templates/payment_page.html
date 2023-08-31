@@ -1,0 +1,83 @@
+{# templates/payment_page.html #} {% extends "common_layout.html" %} {% block
+content %}
+<article class="card" style="overflow-y: scroll">
+  <div class="container">
+    <div class="card-title">
+      <h2>Payment</h2>
+    </div>
+    <form action="/make-payment" method="post">
+      <div class="card-body">
+        <div class="payment-type">
+          <h4>Choose payment method below</h4>
+          <div class="types flex justify-center">
+            <div class="type selected">
+              <div class="logo">
+                <i class="far fa-credit-card"></i>
+              </div>
+              <div class="text">
+                <p>
+                  <img src="/static/img/upi.png" alt="upi-img" width="30" />
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="payment-info flex" style="justify-content: center">
+          <div class="column shipping">
+            <div class="title">
+              <h4>YOUR UPI ID</h4>
+            </div>
+            <div class="field full">
+              <input
+                id="upi_id"
+                type="text"
+                placeholder="upi@id"
+                name="upi_id"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-actions flex justify-end">
+        <div class="flex-end">
+          <button class="button button-primary" type="submit">Proceed</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</article>
+
+<script>
+  const form = document.querySelector("form");
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    let upiID = document.getElementById("upi_id").value;
+    // replace spaces with ""
+    upiID = upiID.replace(/\s/g, "");
+
+    const booking = JSON.parse(localStorage.getItem("booking"));
+    booking["upi_id"] = upiID;
+
+    // create a new input element
+    const input = document.createElement("input");
+    // set its type
+    input.type = "hidden";
+    // set its name
+    input.name = "booking";
+    // set its value
+    input.value = JSON.stringify(booking);
+    // append it to the form
+    form.appendChild(input);
+
+    // form.submit();
+    if (upiID == "") {
+      alert("Please fill the UPI ID field");
+    } else {
+      localStorage.clear();
+      form.submit();
+    }
+  });
+</script>
+
+{% endblock content %}
