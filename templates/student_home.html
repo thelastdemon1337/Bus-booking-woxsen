@@ -2,6 +2,12 @@
 content %}
 <div id="student_home">
   <div class="search-bar">
+<div class="day-selector">
+      <select name="day-selector" id="day-selector">
+        <option value="home" selected>Home</option>
+        <option value="campus">Campus</option>
+      </select>
+    </div>
     <div class="route-selector">
       <details class="custom-select">
         <summary class="radios">
@@ -37,16 +43,10 @@ content %}
       </details>
     </div>
 
-    <div class="day-selector">
-      <select name="day-selector" id="day-selector">
-        <option value="morning" selected>Morning</option>
-        <option value="evening">Evening</option>
-      </select>
-    </div>
 
     <!-- date selector default today-->
     <div class="date-selector" onclick="openCalender()">
-      <input type="date" id="date" name="date" onchange="onDateSelect(event)" />
+      <input type="date" id="date" name="date" onchange="onDateSelect(event)" disabled/>
       <img
         src="{{url_for('static', filename='/img/calendar.png')}}"
         alt="calendar"
@@ -266,7 +266,8 @@ content %}
     var year = dateObj.getFullYear();
 
     // get day name from day number
-    var dayName = getDayName(day);
+    dayName = getDayName(day);
+
 
     // get month name from month number
     var monthName = getMonthName(month);
@@ -321,7 +322,8 @@ content %}
     const source = data.source.toUpperCase();
     const destination = data.destination;
     const startTime = data.start_time;
-    const locations = data.locations.join(", ")
+    let locations = data.locations.join(", ")
+    const r_locations = data.locations.reverse()
     const fare = data.fare;
     const busNumber = data.bus_number;
     const availableSeats = data.available_seats;
@@ -329,16 +331,23 @@ content %}
 
     const busCard = document.createElement("div");
     busCard.classList.add("bus-card");
+
+    // get Day
+
+    // const currentDate = new Date();
+    // const currentDayIndex = currentDate.getDay(); // Returns a number from 0 (Sunday) to 6 (Saturday)
+    // console.log(currentDate.getDay())
+
     const item = `
             <div class="item-1">
               <div class="item-content">
-                <h3 style='text-decoration: underline;'>${busNumber}</h3>
+                <h3 style='text-decoration: underline;'>${daySelector.value == "home" ? source : destination.toUpperCase()} TO ${daySelector.value == "home" ? destination.toUpperCase() : source} </h3>
                 
                 <div class="bus-details">
                   <div class="start">
-                    <span>${source}</span>
+                    <span>TRIP START</span>
                     <span>${startTime}</span>
-                    <span>(${locations})</span>
+                    <span>(${daySelector.value == "home" ? locations : r_locations})</span>
                     </div>
                 </div>
               </div>

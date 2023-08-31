@@ -32,10 +32,8 @@ jwt = JWTManager(app)
 
 
 bus_routes = {
-    1:    {"name": "Corporate Office", "home": "5:00 PM", "campus": "7:00 AM", "fare": "450", "route_id": 1, "source": "campus", "destination": "Corporate Office", "locations": ["woxsen", "sangareddy", "Gachibowli", "Corporate Office"]},
-    2:   {"name": "Ameerpet", "home": "5:00 PM", "campus": "7:00 AM", "fare": "450", "route_id": 2, "source": "campus", "destination": "Ameerpet", "locations": ["Woxsen", "Miyapur", "kukatpally", "ameerpet"]},
-    # 3:    {"name": "Route-3", "evening": "5:00 PM", "morning": "7:00 AM", "fare": "1000", "route_id": 1, "source": "ameerpet", "destination": "woxsen", "locations": ["ameerpet", "kukatpally", "hitech-city", "woxsen"]},
-    # 4:   {"name": "Route-4", "evening": "5:00 PM", "morning": "7:00 AM", "fare": "1000", "route_id": 2, "source": "HiTech-City", "destination": "woxsen", "locations": ["hitech-city", "kukatpally", "ameerpet", "woxsen"]},
+    1:    {"name": "Corporate Office", "home": "5:15 PM", "campus": "7:00 AM", "fare": "450", "route_id": 1, "source": "campus", "destination": "Corporate Office", "locations": ["woxsen", "sangareddy", "Gachibowli", "Corporate Office"]},
+    2:   {"name": "Ameerpet", "home": "5:15 PM", "campus": "7:00 AM", "fare": "450", "route_id": 2, "source": "campus", "destination": "Ameerpet", "locations": ["Woxsen", "Miyapur", "kukatpally", "ameerpet"]},
 }
 
 # handle page not found
