@@ -179,8 +179,7 @@ def download_csv():
     
     # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
     query = """
-    SELECT u.email, u.username, r.seat, r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school,
-    r.p_id as passenger_id, r.transaction_id as transaction_id
+    SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
     FROM reservation r
     INNER JOIN users u ON r.user_id = u.id
     INNER JOIN bus b ON r.bus_id = b.id
@@ -192,7 +191,7 @@ def download_csv():
     result = cursor.fetchall()
     
     dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
-    print(dict_result)
+    print(dict_result[:1])
     create_csv(dict_result)
     
     # send file data.csv
@@ -465,8 +464,11 @@ def make_payment():
         "transaction_id": transaction_id,
     }
     
-    send_confirmation_mail(user["email"], username, booking)
-    return redirect(url_for("logout"))
+    # mail functionality
+    # send_confirmation_mail(user["email"], username, booking)
+    # return redirect(url_for("logout"))
+    return render_template("thankyou.html")
+    # return redirect(url_for("logout"))
 
 
 def send_confirmation_mail(to, name, booking):
