@@ -168,6 +168,7 @@ def create_csv(dict_data):
 def download_csv():
     travel_date = request.args.get("date")
     bus_number = request.args.get("bus_number")
+    print(bus_number)
     
     # get id of bus
     query = "SELECT id FROM bus WHERE bus_number = ?"
@@ -206,25 +207,24 @@ def home():
     # check if user is staff
     if user["role"] == "staff":
         title = "WOXSEN Bus Staff Home"
-        
-        # get all reservations made in past 10 days AND bus_id, bus_number
+
+        # get all reservations made in the past 10 days AND bus_id, bus_number
         query = """
-            SELECT r.id, r.bus_id, r.date, b.bus_number,b.fare FROM reservation r 
+            SELECT r.id, r.bus_id, r.date, b.bus_number, b.fare FROM reservation r 
             INNER JOIN users u ON r.user_id = u.id  
             INNER JOIN bus b ON r.bus_id = b.id
-            where r.date >= date('now','-10 days') ORDER BY r.date DESC LIMIT 10
+            WHERE r.date >= date('now', '-10 days') ORDER BY r.date DESC LIMIT 10
         """
-    
+
         cursor, save, close = connect_db()
 
-        
         dict_result = {}
-        
+
         cursor.execute(query)
-        
+
         dict_result = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
-        
-        
+        # print(F"dict_result : {dict_result}")
+
         # filter in bus_number and date and total seats booked
         result = {}
 
@@ -236,41 +236,43 @@ def home():
             if bus_number not in result:
                 result[bus_number] = {}
             if date not in result[bus_number]:
-                result[bus_number][date] = [0, 30, row['fare']]
+                result[bus_number][date] = [0, 30, bus_id, row['fare']]
             result[bus_number][date][0] += 1
-        
+
         for row in dict_result:
-            # check if bus_number and date exists in bus_seats
+            # check if bus_number and date exist in bus_seats
             # if exists, update available_seats = available_seats - total_seats_booked
             # if not exists, insert into bus_seats
             bus_seats_query = "SELECT total_seats FROM bus_seats WHERE bus_number = ? AND date = ?" 
-            
+
             cursor.execute(bus_seats_query, (row["bus_number"], row["date"]))
-            
+
             bus_seats_result = cursor.fetchone()
             if bus_seats_result is None:
                 # insert into bus_seats
                 insert_query = "INSERT INTO bus_seats (bus_number, total_seats, date, fare) VALUES (?, ?, ?, ?)"
-                cursor.execute(insert_query, (row["bus_number"], result[row["bus_number"]][row["date"]][1], row["date"],result[row["bus_number"]][row["date"]][2]))
+                cursor.execute(insert_query, (row["bus_number"], result[row["bus_number"]][row["date"]][1], row["date"], result[row["bus_number"]][row["date"]][3]))
                 bus_seats = 30
-                fare = result[row["bus_number"]][row["date"]][2]
+                fare = result[row["bus_number"]][row["date"]][3]
             else:
-                # get available_seats from bus_seats
-                get_query = "SELECT total_seats,fare FROM bus_seats WHERE bus_number = ? AND date = ?"
+                # get available_seats and fare from bus_seats
+                get_query = "SELECT total_seats, fare FROM bus_seats WHERE bus_number = ? AND date = ?"
                 cursor.execute(get_query, (row["bus_number"], row["date"]))
                 r = cursor.fetchone()
                 bus_seats = r[0]
                 fare = r[1]
-           
+
             total_seats = bus_seats
 
             result[row["bus_number"]][row["date"]][1] = total_seats
-            result[row["bus_number"]][row["date"]][2] = fare
-            print(total_seats)
-        print(result)
+            result[row["bus_number"]][row["date"]][3] = fare
+            # print(total_seats)
+        print(F"result : {result}")
+
         save()
         close()
         return render_template("staff_home.html", title=title, data=result)
+
     
     
     title = "WOXSEN Bus Student Home"
@@ -280,29 +282,34 @@ def home():
 @app.route("/update-bus-info")
 def update_seats():
     try:
-        
-        # date,
-        #   bus_number,
-        #   seats: input.value,
-        
         date = request.args["date"]
         bus_number = request.args["bus_number"]
         seats = request.args["seats"]
         fare = request.args["fare"]
+        updated_bus_number = request.args["updated_bus_number"]
+        print(F"updated_bus_number : {updated_bus_number}")
 
         cursor, save, close = connect_db()
         
-        # update seats,fare in bus table for bus_number and date
-        update_query = "UPDATE bus_seats SET total_seats = ?, fare = ? WHERE bus_number = ? and date = ?"
+        # Update seats and fare in the bus table for bus_number and date
+        update_query = "UPDATE bus_seats SET total_seats = ?, fare = ? WHERE bus_number = ? AND date = ?"
+        cursor.execute(update_query, (seats, fare, bus_number, date))
         
-        cursor.execute(update_query, (seats,fare, bus_number, date))
+        # Update the bus number in the same row
+        update_bus_number_query = "UPDATE bus_seats SET bus_number = ? WHERE bus_number = ? AND date = ?"
+        cursor.execute(update_bus_number_query, (updated_bus_number, bus_number, date))
+        
+        update_bus_number_query = "UPDATE bus SET bus_number = ? WHERE bus_number = ?"
+        cursor.execute(update_bus_number_query, (updated_bus_number, bus_number))
         
         save()
         close()
+        
         return jsonify({"status": "success"}), 200
     except Exception as e:
         print(e)
         return jsonify({"status": "error", "msg": str(e)}), 400
+
 
 
 @app.route("/search-buses")
