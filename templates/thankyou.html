@@ -20,9 +20,18 @@
 
 	<div class="main-content">
 		<i class="fa fa-check main-content__checkmark" id="checkmark"></i>
-		<p class="main-content__body" data-lead-id="main-content-body">Further details of your booking will be communicated to you shortly <br> Thank you for using Woxsen Bus Booking System</p>
+		<p class="main-content__body" data-lead-id="main-content-body">Further details of your booking will be communicated to you shortly <br> Thank you for using Woxsen Bus Booking System</p> <br> <br> <br>
+		<button id="bookAgainButton">Book Again</button>
         
 	</div>
+	<script>
+        // Add an event listener to the "Book Again" button
+        const bookAgainButton = document.getElementById('bookAgainButton');
+        bookAgainButton.addEventListener('click', function() {
+            // Redirect to the "/home" route
+            window.location.href = '/home';
+        });
+    </script>
 
 	<footer class="site-footer" id="footer">
 		<p class="site-footer__fineprint" id="fineprint">Copyright Woxsen ©2023 | All Rights Reserved</p>
