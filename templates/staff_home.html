@@ -55,7 +55,7 @@
             <th>CSV File</th>
             <th>Update Changes</th>
             <th>Mail Details</th>
-            <th>Whatsapp Details</th>
+            <!-- <th>Whatsapp Details</th> -->
           </tr>
           {% for bus_number,value in data.items() %} {% for travel_date, seats
           in value.items()%}
@@ -115,11 +115,11 @@
               document.write('<button data-date="{{travel_date}}" data-bus="{{bus_number}}" class="disabled savebtn">save</button>');
               document.write('</td>');
               document.write('<td style="text-align: center;">');
-              document.write('<button class="mails" style="background-color: #0072C6">Mail</button>');
-              document.write('</td>');
-              document.write('<td style="text-align: center;">');
-              document.write('<button class="mails" style="background-color: #075e54">WhatsApp</button>');
-              document.write('</td>');
+              document.write('<button class="mails" data-busn="{{bus_number}}" data-date="{{travel_date}}" style="background-color: #0072C6">Mail</button>');
+              // document.write('</td>');
+              // document.write('<td style="text-align: center;">');
+              // document.write('<button class="whats" data-busn="{{bus_number}}" data-date="{{travel_date}}" style="background-color: #075e54">WhatsApp</button>');
+              // document.write('</td>');
               document.write('</tr>');
             }
               // console.log(inputField)
@@ -204,6 +204,8 @@
     const busNumberInput = document.querySelectorAll(".busN");
     const fareInputs = document.querySelectorAll(".fare-input");
     const textAreas = document.querySelectorAll(".textAreas");
+    const mailbuttons = document.querySelectorAll(".mails")
+    // const whatsbuttons = document.querySelectorAll(".whats")
 
     // Update bus number event
 
@@ -222,6 +224,31 @@
     //       button.classList.remove("disabled");
     //     }
     // })
+      mailbuttons.forEach((button) => {
+        button.addEventListener("click", (e) => {
+          console.log("Mail Button clicked!")
+          // console.log(`txtar : ${txtar}`)
+          const date = e.target.getAttribute("data-date");
+          const bus_number = e.target.getAttribute("data-busn");
+          const formattedTxtar = encodeURIComponent(txtar)
+          fetch(`/mail-details?date=${date}&bus_number=${bus_number}&additional_details=${formattedTxtar}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.status === "success") {
+              alert("Details mailed successfully");
+            } else {
+              alert("Something went wrong");
+            }
+          });
+
+        })
+      })
+
+      // whatsbuttons.forEach((button) => {
+      //   button.addEventListener("click", (e) => {
+      //     console.log("WhatsApp Button clicked!")
+      //   })
+      // })
 
       textAreas.forEach((input) => {
         input.addEventListener("input", (e) => {

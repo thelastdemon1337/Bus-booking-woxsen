@@ -17,6 +17,7 @@ from flask_jwt_extended import get_jwt
 from flask_jwt_extended import set_access_cookies
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import JWTManager
+from urllib.parse import unquote
 
 app = Flask(__name__)
 
@@ -25,8 +26,8 @@ app.config["JWT_SECRET_KEY"] = "super-secret"
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
-from_ = "shobika.gaddamv@gmail.com"
-pwd = "jgwxqtcctacghjst"
+from_ = "woxsenailab@gmail.com"
+pwd = "nrkqjrighuffuxwx"
 
 jwt = JWTManager(app)
 
@@ -279,6 +280,50 @@ def home():
     
     return render_template("student_home.html", title=title, routes=bus_routes.values())
 
+# new routes
+@app.route("/mail-details")
+def mail_details():
+    try:
+        travel_date = request.args["date"]
+        bus_number = request.args["bus_number"]
+        additional_details = request.args["additional_details"]
+        decoded_additional_details = unquote(additional_details)
+        # print(F"decoded_details : {decoded_additional_details}")
+        # print(f"Recieved data : {date}, {bus_number} and {additional_details}")
+        query = "SELECT id FROM bus WHERE bus_number = ?"
+    
+        cursor, _, close = connect_db()
+        
+        cursor.execute(query, (bus_number,))
+        bus_id = cursor.fetchone()[0]
+        print(F"Fetched Bus_ID : {bus_id}")
+        
+        # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
+        query = """
+        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
+        FROM reservation r
+        INNER JOIN users u ON r.user_id = u.id
+        INNER JOIN bus b ON r.bus_id = b.id
+        WHERE r.date = ? AND r.bus_id = ?
+        """
+        
+        cursor.execute(query, (travel_date, bus_id))
+        
+        result = cursor.fetchall()
+        
+        dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
+        for dct in dict_result:
+            send_confirmation_mail(dct, decoded_additional_details)
+            # print(F"dict : {dct['passenger_email']}")
+
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({"status": "error", "msg": str(e)}), 400
+    
+
+# new routes end
 @app.route("/update-bus-info")
 def update_seats():
     try:
@@ -478,20 +523,24 @@ def make_payment():
     # return redirect(url_for("logout"))
 
 
-def send_confirmation_mail(to, name, booking):
+def send_confirmation_mail(dct, decoded_additional_details):
+    print(decoded_additional_details)
+    decoded_additional_details_html = "<br>".join(decoded_additional_details.split("\n"))
     msg = MIMEMultipart()
     
     msg["From"] = from_
-    msg["To"] = to
+    msg["To"] = dct["passenger_email"]
     msg["Subject"] = "Woxsen Bus Booking Confirmation"
+    
+    name = dct["passenger_name"]
     
     body = f"""
     <h1>Hi {name},</h1>
     <p>Thank you for booking with Woxsen Bus. Your booking details are as follows:</p>
-    <p>Bus Number: {booking['bus_number']}</p>
-    <p>Date: {booking['date']}</p>    
-    <p>Seats: {booking['seats']}</p>
-    <p>Transaction ID: {booking['transaction_id']}</p>
+    <p><b>Booking Date</b>: {dct['date']}</p>    
+    <p><b>Bus Number</b>: {dct['bus_number']}</p>
+    <p><b>Driver Details</b>: {decoded_additional_details_html}</p>
+    <p><b>Transaction ID</b>: {dct['transaction_id']}</p>
     """
     
     msgHtml = MIMEText(body, "html")
@@ -503,7 +552,8 @@ def send_confirmation_mail(to, name, booking):
     
     conn.login(from_, pwd)
 
-    conn.sendmail(from_, to, msg.as_string())
+    conn.sendmail(from_, msg["To"], msg.as_string())
+    print("Sent mail.")
     
     conn.close()
     
