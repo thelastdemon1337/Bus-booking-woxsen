@@ -18,6 +18,7 @@ from flask_jwt_extended import set_access_cookies
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import JWTManager
 from urllib.parse import unquote
+import pywhatkit
 
 app = Flask(__name__)
 
@@ -322,6 +323,49 @@ def mail_details():
         print(e)
         return jsonify({"status": "error", "msg": str(e)}), 400
     
+@app.route("/whatsapp-details")
+def whats_details():
+    try:
+        travel_date = request.args["date"]
+        bus_number = request.args["bus_number"]
+        additional_details = request.args["additional_details"]
+        decoded_additional_details = unquote(additional_details)
+        # print(F"decoded_details : {decoded_additional_details}")
+        # print(f"Recieved data : {date}, {bus_number} and {additional_details}")
+        query = "SELECT id FROM bus WHERE bus_number = ?"
+    
+        cursor, _, close = connect_db()
+        
+        cursor.execute(query, (bus_number,))
+        bus_id = cursor.fetchone()[0]
+        print(F"Fetched Bus_ID : {bus_id}")
+        
+        # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
+        query = """
+        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
+        FROM reservation r
+        INNER JOIN users u ON r.user_id = u.id
+        INNER JOIN bus b ON r.bus_id = b.id
+        WHERE r.date = ? AND r.bus_id = ?
+        """
+        
+        cursor.execute(query, (travel_date, bus_id))
+        
+        result = cursor.fetchall()
+        
+        dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
+        for dct in dict_result:
+            # send_confirmation_mail(dct, decoded_additional_details)
+            # print(F"dict : {dct}")
+            print(F"dict : {dct['passenger_phone']}")
+            send_whatsapp_message(dct, decoded_additional_details)
+
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({"status": "error", "msg": str(e)}), 400
+    
 
 # new routes end
 @app.route("/update-bus-info")
@@ -523,6 +567,21 @@ def make_payment():
     # return redirect(url_for("logout"))
 
 
+def send_whatsapp_message(dct, decoded_additional_details):
+    name = dct["passenger_name"]
+    phoneNumber = f"+91{dct['passenger_phone']}"
+    body = f"""Hi {name},
+Thank you for booking with Woxsen Bus. 
+Your booking details are as follows:
+Booking Date: {dct['date']}
+Bus Number: {dct['bus_number']}
+Driver Details: {decoded_additional_details}
+Transaction ID: {dct['transaction_id']}
+    """
+    decoded = unquote(body)
+    print(F"sending data : {decoded}")
+    pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 8, tab_close=True)
+
 def send_confirmation_mail(dct, decoded_additional_details):
     print(decoded_additional_details)
     decoded_additional_details_html = "<br>".join(decoded_additional_details.split("\n"))
@@ -539,7 +598,7 @@ def send_confirmation_mail(dct, decoded_additional_details):
     <p>Thank you for booking with Woxsen Bus. Your booking details are as follows:</p>
     <p><b>Booking Date</b>: {dct['date']}</p>    
     <p><b>Bus Number</b>: {dct['bus_number']}</p>
-    <p><b>Driver Details</b>: {decoded_additional_details_html}</p>
+    <p><b>Driver Details</b>:<br> {decoded_additional_details_html}</p>
     <p><b>Transaction ID</b>: {dct['transaction_id']}</p>
     """
     
