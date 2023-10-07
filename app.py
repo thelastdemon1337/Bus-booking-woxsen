@@ -295,7 +295,7 @@ def mail_details():
         decoded_additional_details = unquote(additional_details)
         # print(F"decoded_details : {decoded_additional_details}")
         # print(f"Recieved data : {date}, {bus_number} and {additional_details}")
-        query = "SELECT id FROM bus WHERE bus_number = ?"
+        query = "SELECT route_id FROM bus WHERE bus_number = ?"
     
         cursor, _, close = connect_db()
         
@@ -308,7 +308,7 @@ def mail_details():
         SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
         FROM reservation r
         INNER JOIN users u ON r.user_id = u.id
-        INNER JOIN bus b ON r.bus_id = b.id
+        INNER JOIN bus b ON r.bus_id = b.route_id
         WHERE r.date = ? AND r.bus_id = ?
         """
         
@@ -317,6 +317,7 @@ def mail_details():
         result = cursor.fetchall()
         
         dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
+        print(F"dict result in mail : {dict_result}")
         for dct in dict_result:
             send_confirmation_mail(dct, decoded_additional_details)
             # print(F"dict : {dct['passenger_email']}")
@@ -336,7 +337,7 @@ def whats_details():
         decoded_additional_details = unquote(additional_details)
         # print(F"decoded_details : {decoded_additional_details}")
         # print(f"Recieved data : {date}, {bus_number} and {additional_details}")
-        query = "SELECT id FROM bus WHERE bus_number = ?"
+        query = "SELECT route_id FROM bus WHERE bus_number = ?"
     
         cursor, _, close = connect_db()
         
@@ -349,7 +350,7 @@ def whats_details():
         SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
         FROM reservation r
         INNER JOIN users u ON r.user_id = u.id
-        INNER JOIN bus b ON r.bus_id = b.id
+        INNER JOIN bus b ON r.bus_id = b.route_id
         WHERE r.date = ? AND r.bus_id = ?
         """
         
