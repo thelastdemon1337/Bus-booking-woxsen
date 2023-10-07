@@ -197,6 +197,7 @@
     // });
     // toggle code end
     let bn = ""
+    st = ""
     let txtar = ""
     // get all the input fields class name seats-input and type number
     const inputs = document.querySelectorAll(".seats-input");
@@ -207,31 +208,14 @@
     const mailbuttons = document.querySelectorAll(".mails")
     const whatsbuttons = document.querySelectorAll(".whats")
 
-    // Update bus number event
-
-    // const bno = document.getElementById("bn")
-    // bno.addEventListener("input", (e) => {
-    //   const bnum = e.target.value
-    //   console.log(`bnum : ${bnum}`)
-    //   console.log(`data-bus : ${e.target.getAttribute("data-bus")}`)
-    //   const button = document.querySelector(`button[data-date="${date}"]`);
-    //   if(bnum === e.target.getAttribute("data-bus")) {
-    //       if (button.classList.contains("disabled")) return
-    //       button.classList.add("disabled");
-    //       return;
-    //     } else {
-    //       if (!button.classList.contains("disabled")) return
-    //       button.classList.remove("disabled");
-    //     }
-    // })
-      mailbuttons.forEach((button) => {
-        button.addEventListener("click", (e) => {
-          console.log("Mail Button clicked!")
-          // console.log(`txtar : ${txtar}`)
-          const date = e.target.getAttribute("data-date");
-          const bus_number = e.target.getAttribute("data-busn");
-          const formattedTxtar = encodeURIComponent(txtar)
-          fetch(`/mail-details?date=${date}&bus_number=${bus_number}&additional_details=${formattedTxtar}`)
+    mailbuttons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        console.log("Mail Button clicked!")
+        // console.log(`txtar : ${txtar}`)
+        const date = e.target.getAttribute("data-date");
+        const bus_number = e.target.getAttribute("data-busn");
+        const formattedTxtar = encodeURIComponent(txtar)
+        fetch(`/mail-details?date=${date}&bus_number=${bus_number}&additional_details=${formattedTxtar}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.status === "success") {
@@ -241,16 +225,16 @@
             }
           });
 
-        })
       })
+    })
 
-      whatsbuttons.forEach((button) => {
-        button.addEventListener("click", (e) => {
-          console.log("WhatsApp Button clicked!")
-          const date = e.target.getAttribute("data-date");
-          const bus_number = e.target.getAttribute("data-busn");
-          const formattedTxtar = encodeURIComponent(txtar)
-          fetch(`/whatsapp-details?date=${date}&bus_number=${bus_number}&additional_details=${formattedTxtar}`)
+    whatsbuttons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        console.log("WhatsApp Button clicked!")
+        const date = e.target.getAttribute("data-date");
+        const bus_number = e.target.getAttribute("data-busn");
+        const formattedTxtar = encodeURIComponent(txtar)
+        fetch(`/whatsapp-details?date=${date}&bus_number=${bus_number}&additional_details=${formattedTxtar}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.status === "success") {
@@ -259,14 +243,17 @@
               alert("Something went wrong");
             }
           });
-        })
       })
+    })
 
-      textAreas.forEach((input) => {
-        input.addEventListener("input", (e) => {
-          txtar = input.value
-        })
+    textAreas.forEach((input) => {
+      input.addEventListener("input", (e) => {
+        txtar = input.value
       })
+    })
+
+    // Update bus number event
+
     busNumberInput.forEach((input) => {
       input.addEventListener("input", (e) => {
         // console.log(input.value)
@@ -304,12 +291,12 @@
     // add event listener to each input field
     inputs.forEach((input) => {
       input.addEventListener("input", (e) => {
-        console.log(txtar)
         // data attribute
         // custom functionality
         const busNumber = e.target.getAttribute("data-busn")
         const date = e.target.getAttribute("data-date");
         const seats = e.target.getAttribute("data-seats");
+
 
 
         // get the button with the same date attribute
@@ -324,6 +311,8 @@
         } else {
           // remove disabled class
           console.log(`Bus Number : ${busNumber} \n Date : ${date} \n Seats : ${seats}`)
+          st = e.target.value
+          // console.log(e.target.value)
           if (!button.classList.contains("disabled")) return
           button.classList.remove("disabled");
         }
@@ -369,6 +358,8 @@
 
         const bus_number = fareInput.getAttribute("data-bus");
 
+        // console.log(`Bus Number : ${bus_number} \n Date : ${date} \n Seats : ${st}`)
+
         // if input value is greater than 40 return
         if (input.value > 40) {
           alert("Seats cannot be greater than 40");
@@ -381,8 +372,15 @@
           alert("Seats cannot be less than 0");
           return;
         }
-        if (bn == "" | bn == null || bn == undefined) bn = bus_number
-        fetch(`/update-bus-info?date=${date}&bus_number=${bus_number}&seats=${input.value}&fare=${fareInput.value}&updated_bus_number=${bn}`)
+        console.log(`bus_number : ${bus_number}`)
+        console.log(`input.value : ${input.value}`)
+        if (bn == "" || bn == null || bn == undefined) bn = bus_number
+        if (st == "" || st == null || st == undefined) st = input.value
+        console.log(`BN value : ${bn}`)
+        console.log(`ST value : ${st}`)
+        // console.log("Values before sending to route:")
+        // console.log(`Date : ${date}\nBus number : ${bus_number}\nupdated Bus number : ${bn}\nseats : ${st}`)
+        fetch(`/update-bus-info?date=${date}&bus_number=${bus_number}&seats=${st}&fare=${fareInput.value}&updated_bus_number=${bn}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.status === "success") {

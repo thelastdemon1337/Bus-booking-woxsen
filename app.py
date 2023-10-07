@@ -170,22 +170,25 @@ def create_csv(dict_data):
 def download_csv():
     travel_date = request.args.get("date")
     bus_number = request.args.get("bus_number")
-    print(bus_number)
+    print("Executing /csv route")
+    print(F'bus_number : {bus_number}')
     
     # get id of bus
-    query = "SELECT id FROM bus WHERE bus_number = ?"
+    query = "SELECT route_id FROM bus WHERE bus_number = ?"
     
     cursor, _, close = connect_db()
     
     cursor.execute(query, (bus_number,))
     bus_id = cursor.fetchone()[0]
+
+    print(F"bus_id : {bus_id}")
     
     # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
     query = """
     SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
     FROM reservation r
     INNER JOIN users u ON r.user_id = u.id
-    INNER JOIN bus b ON r.bus_id = b.id
+    INNER JOIN bus b ON r.bus_id = b.route_id
     WHERE r.date = ? AND r.bus_id = ?
     """
     
@@ -195,6 +198,7 @@ def download_csv():
     
     dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
     print(dict_result[:1])
+    print("entering create_csv fun")
     create_csv(dict_result)
     
     # send file data.csv
@@ -214,7 +218,7 @@ def home():
         query = """
             SELECT r.id, r.bus_id, r.date, b.bus_number, b.fare FROM reservation r 
             INNER JOIN users u ON r.user_id = u.id  
-            INNER JOIN bus b ON r.bus_id = b.id
+            INNER JOIN bus b ON r.bus_id = b.route_id
             WHERE r.date >= date('now', '-10 days') ORDER BY r.date DESC LIMIT 10
         """
 
@@ -225,7 +229,7 @@ def home():
         cursor.execute(query)
 
         dict_result = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
-        # print(F"dict_result : {dict_result}")
+        print(F"dict_result : {dict_result}")
 
         # filter in bus_number and date and total seats booked
         result = {}
@@ -376,6 +380,8 @@ def update_seats():
         seats = request.args["seats"]
         fare = request.args["fare"]
         updated_bus_number = request.args["updated_bus_number"]
+        # print(F"updated seats : {seats}")
+        print(F"Original bus number : {bus_number}")
         print(F"updated_bus_number : {updated_bus_number}")
 
         cursor, save, close = connect_db()
@@ -504,13 +510,18 @@ def make_payment():
     
     """
     {
-        'bus_id': '9', 
+        'bus_id': '2', 
         'seats': 1, 
-        'date': '2023-03-17', 
-        'passengers': [{'name': 'vijay', 'email': 'vijay@mail.com', 'school': 'School of Technology', 'studentId': 'vijaysdf', 'phone': '1234567890'}], 
-        'available_seats': '30', 
-        'upi_id': 'test.pi',
-        'day_type': 'morning'
+        'date': '2023-10-05', 
+        'passengers': [{'name': 'Tarun Kotagiri', 
+        'email': 'tarun.kotagiri@woxsen.edu.in', 
+        'school': 'School of Business', 
+        'studentId': '12345678', 
+        'phone': '7032611447'}], 
+        'available_seats': '0', 
+        'day_type': 'home', 
+        'upi_id': 'test@ybl'
+        
     }
     
     """
@@ -524,6 +535,8 @@ def make_payment():
     
     cursor.execute(query)
     
+    print(F'first db call output: {cursor.fetchall()}')
+
     total_occuiped_seats = len(cursor.fetchall())
         
     # update reservation table with the new reservation
@@ -534,35 +547,43 @@ def make_payment():
     for index, passenger in enumerate(booking['passengers'],start=1):
         seat_no = f"L{total_occuiped_seats + index}"
         seat_nos.append(seat_no)
+        available_seats = booking["available_seats"]
+        print(F"available_seats : {available_seats}")
+        if int(available_seats) <= 0: # mod_new_bus
+            print('Making new bus with dummy bus number')
+            if booking["bus_id"] == "1":
+                booking["bus_id"] = "1.1"
+            if booking["bus_id"] == "2":
+                booking["bus_id"] = "2.1"
         cursor.execute(update_query, (booking["bus_id"], booking_date, seat_no, user_id, passenger['name'], passenger['email'], passenger['school'], passenger['studentId'],passenger["phone"],booking['day_type'], transaction_id))
 
     # get bus number from bus table
-    query = "SELECT bus_number FROM bus WHERE id = ?"
-    
+    query = "SELECT bus_number FROM bus WHERE route_id = ?"
+    print(F"fetching busNumber with busID : {booking['bus_id']}")
     cursor.execute(query, (booking["bus_id"],))
 
     bus_number = cursor.fetchone()[0]
+    print(F"Bus_Number : {bus_number}")
     
-    # get username from user table
-    query = "SELECT username FROM users WHERE id = ?"
+    # # get username from user table
+    # query = "SELECT username FROM users WHERE id = ?"
     
-    cursor.execute(query, (user_id,))
+    # cursor.execute(query, (user_id,))
     
-    username = cursor.fetchone()[0] 
+    # username = cursor.fetchone()[0] 
 
     save()
     close()
     
-    booking = {
-        "bus_number": bus_number,
-        "date": booking_date,
-        "seats": ", ".join(seat_nos),
-        "transaction_id": transaction_id,
-    }
+    # booking = {
+    #     "bus_number": bus_number,
+    #     "date": booking_date,
+    #     "seats": ", ".join(seat_nos),
+    #     "transaction_id": transaction_id,
+    # }
     
     # mail functionality
     # send_confirmation_mail(user["email"], username, booking)
-    # return redirect(url_for("logout"))
     return render_template("thankyou.html")
     # return redirect(url_for("logout"))
 

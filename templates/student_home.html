@@ -140,6 +140,7 @@ content %}
       .then((res) => res.json())
       .then((data) => {
         // clear bus cards
+        // console.log(data.data[0].available_seats)
         busCards.innerHTML = "";
 
         const resultSearch = document.getElementById("result-search");
@@ -300,10 +301,12 @@ content %}
     dateElement.setAttribute("max", nextDay);
   }
 
+  // mod
   function updateBookingState(element) {
     // get attribute data-route from element
     const bus_id = element.getAttribute("data-bus_id");
     const available_seats = element.getAttribute("data-available_seats");
+    console.log(available_seats)
 
     const booking = {
       bus_id: bus_id,
