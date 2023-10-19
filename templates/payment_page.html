@@ -8,8 +8,8 @@ content %}
     <form action="/make-payment" method="post">
       <div class="card-body">
         <div class="payment-type">
-          <h4>Choose payment method below</h4>
-          <div class="types flex justify-center">
+          <h1>Make payment to the below QR</h1>
+          <!-- <div class="types flex justify-center">
             <div class="type selected">
               <div class="logo">
                 <i class="far fa-credit-card"></i>
@@ -20,9 +20,12 @@ content %}
                 </p>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
-        <div class="payment-info flex" style="justify-content: center">
+        <img src="/static/img/upi.jpeg" alt="upi-img" width="50%" />
+        <br> <br>
+        <h3>Payments will be subjected to verification!</h3>
+        <!-- <div class="payment-info flex" style="justify-content: center">
           <div class="column shipping">
             <div class="title">
               <h4>YOUR UPI ID</h4>
@@ -36,11 +39,11 @@ content %}
               />
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
       <div class="card-actions flex justify-end">
         <div class="flex-end">
-          <button class="button button-primary" type="submit">Proceed</button>
+          <button class="button button-primary" type="submit">Done</button>
         </div>
       </div>
     </form>
@@ -52,7 +55,8 @@ content %}
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    let upiID = document.getElementById("upi_id").value;
+    // let upiID = document.getElementById("upi_id").value;
+    let upiID = "tarun@ybl"
     // replace spaces with ""
     upiID = upiID.replace(/\s/g, "");
 

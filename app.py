@@ -209,7 +209,80 @@ def download_csv():
 @app.route("/home")
 @jwt_or_redirect()
 def home():
-    # add logic for only friday etc
+    
+    user = get_jwt_identity()
+
+    # check if user is staff
+    if user["role"] == "staff":
+        title = "WOXSEN Bus Staff Home"
+
+        # get all reservations made in the past 10 days AND bus_id, bus_number
+        query = """
+            SELECT r.id, r.bus_id, r.date, b.bus_number, b.fare FROM reservation r 
+            INNER JOIN users u ON r.user_id = u.id  
+            INNER JOIN bus b ON r.bus_id = b.route_id
+            WHERE r.date >= date('now', '-10 days') ORDER BY r.date DESC LIMIT 10
+        """
+
+        cursor, save, close = connect_db()
+
+        dict_result = {}
+
+        cursor.execute(query)
+
+        dict_result = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+        print(F"dict_result : {dict_result}")
+
+        # filter in bus_number and date and total seats booked
+        result = {}
+
+        # {bus_number: {[date, total_seats_booked]}}
+        for row in dict_result:
+            bus_number = row["bus_number"]
+            date = row["date"]
+            bus_id = row["bus_id"]
+            if bus_number not in result:
+                result[bus_number] = {}
+            if date not in result[bus_number]:
+                result[bus_number][date] = [0, 30, bus_id, row['fare']]
+            result[bus_number][date][0] += 1
+
+        for row in dict_result:
+            # check if bus_number and date exist in bus_seats
+            # if exists, update available_seats = available_seats - total_seats_booked
+            # if not exists, insert into bus_seats
+            bus_seats_query = "SELECT total_seats FROM bus_seats WHERE bus_number = ? AND date = ?" 
+
+            cursor.execute(bus_seats_query, (row["bus_number"], row["date"]))
+
+            bus_seats_result = cursor.fetchone()
+            if bus_seats_result is None:
+                # insert into bus_seats
+                insert_query = "INSERT INTO bus_seats (bus_number, total_seats, date, fare) VALUES (?, ?, ?, ?)"
+                cursor.execute(insert_query, (row["bus_number"], result[row["bus_number"]][row["date"]][1], row["date"], result[row["bus_number"]][row["date"]][3]))
+                bus_seats = 30
+                fare = result[row["bus_number"]][row["date"]][3]
+            else:
+                # get available_seats and fare from bus_seats
+                get_query = "SELECT total_seats, fare FROM bus_seats WHERE bus_number = ? AND date = ?"
+                cursor.execute(get_query, (row["bus_number"], row["date"]))
+                r = cursor.fetchone()
+                bus_seats = r[0]
+                fare = r[1]
+
+            total_seats = bus_seats
+
+            result[row["bus_number"]][row["date"]][1] = total_seats
+            result[row["bus_number"]][row["date"]][3] = fare
+            # print(total_seats)
+        print(F"result : {result}")
+
+        save()
+        close()
+        return render_template("staff_home.html", title=title, data=result)
+
+        
+        # add logic for only friday etc
 
     # Get the current time in the IST timezone
     ist_timezone = pytz.timezone('Asia/Kolkata')
@@ -220,83 +293,9 @@ def home():
     end_time = time(16, 0)
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
-    if datetime.today().weekday() in [4, 5] and (start_time <= current_time <= end_time):
+    if datetime.today().weekday() in [3, 4, 5] and (start_time <= current_time <= end_time):
         print("DA")
-        user = get_jwt_identity()
-
-        # check if user is staff
-        if user["role"] == "staff":
-            title = "WOXSEN Bus Staff Home"
-
-            # get all reservations made in the past 10 days AND bus_id, bus_number
-            query = """
-                SELECT r.id, r.bus_id, r.date, b.bus_number, b.fare FROM reservation r 
-                INNER JOIN users u ON r.user_id = u.id  
-                INNER JOIN bus b ON r.bus_id = b.route_id
-                WHERE r.date >= date('now', '-10 days') ORDER BY r.date DESC LIMIT 10
-            """
-
-            cursor, save, close = connect_db()
-
-            dict_result = {}
-
-            cursor.execute(query)
-
-            dict_result = [dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
-            print(F"dict_result : {dict_result}")
-
-            # filter in bus_number and date and total seats booked
-            result = {}
-
-            # {bus_number: {[date, total_seats_booked]}}
-            for row in dict_result:
-                bus_number = row["bus_number"]
-                date = row["date"]
-                bus_id = row["bus_id"]
-                if bus_number not in result:
-                    result[bus_number] = {}
-                if date not in result[bus_number]:
-                    result[bus_number][date] = [0, 30, bus_id, row['fare']]
-                result[bus_number][date][0] += 1
-
-            for row in dict_result:
-                # check if bus_number and date exist in bus_seats
-                # if exists, update available_seats = available_seats - total_seats_booked
-                # if not exists, insert into bus_seats
-                bus_seats_query = "SELECT total_seats FROM bus_seats WHERE bus_number = ? AND date = ?" 
-
-                cursor.execute(bus_seats_query, (row["bus_number"], row["date"]))
-
-                bus_seats_result = cursor.fetchone()
-                if bus_seats_result is None:
-                    # insert into bus_seats
-                    insert_query = "INSERT INTO bus_seats (bus_number, total_seats, date, fare) VALUES (?, ?, ?, ?)"
-                    cursor.execute(insert_query, (row["bus_number"], result[row["bus_number"]][row["date"]][1], row["date"], result[row["bus_number"]][row["date"]][3]))
-                    bus_seats = 30
-                    fare = result[row["bus_number"]][row["date"]][3]
-                else:
-                    # get available_seats and fare from bus_seats
-                    get_query = "SELECT total_seats, fare FROM bus_seats WHERE bus_number = ? AND date = ?"
-                    cursor.execute(get_query, (row["bus_number"], row["date"]))
-                    r = cursor.fetchone()
-                    bus_seats = r[0]
-                    fare = r[1]
-
-                total_seats = bus_seats
-
-                result[row["bus_number"]][row["date"]][1] = total_seats
-                result[row["bus_number"]][row["date"]][3] = fare
-                # print(total_seats)
-            print(F"result : {result}")
-
-            save()
-            close()
-            return render_template("staff_home.html", title=title, data=result)
-
-        
-        
         title = "WOXSEN Bus Student Home"
-        
         return render_template("student_home.html", title=title, routes=bus_routes.values())
     else:
         print("NDA")
