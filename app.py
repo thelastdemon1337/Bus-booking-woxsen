@@ -100,6 +100,52 @@ def refresh_expiring_jwts(response):
     except Exception as e:
         return response
 
+# @app.route("/signup", methods=["GET", "POST"])
+# def login():
+#     error = ""
+#     # if jwt is present in cookies, redirect to dashboard
+    
+#     if request.method == "GET":
+#         title = "WOXSEN Bus Signup"
+#         return render_template("signup.html", title=title)
+    
+#     if request.method == "POST":
+#         form_data = request.form
+#         user_mail = form_data.get("email")
+#         pwd = form_data.get("password")
+        
+#         if user_mail is None or pwd is None:
+#             error = "email or password is missing"
+#             return render_template("login.html", error=error)
+        
+        
+#         cursor, _, close = connect_db() # (cursor, save, close)
+#         # cursor = conn[0]
+#         # save = conn[1]
+#         # close = conn[2]
+        
+#         query = "SELECT id,role FROM users WHERE email = ? AND password = ?"
+        
+#         cursor.execute(query, (user_mail, pwd))
+        
+#         result = cursor.fetchone() # None or (1, "admin")
+        
+#         if result is None:
+#             error = "email or password is incorrect"
+#             return render_template("login.html", error=error)
+    
+#         user_id = result[0]
+#         role = result[1]
+        
+#         close()
+        
+#         response = redirect(url_for('home'))
+        
+#         expires = timedelta(days=1)
+#         access_token = create_access_token(identity={"email": user_mail,"id": user_id, "role": role}, expires_delta=expires)
+#         set_access_cookies(response, access_token)
+#         return response
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = ""
@@ -186,7 +232,7 @@ def download_csv():
     
     # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
     query = """
-    SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
+    SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school
     FROM reservation r
     INNER JOIN users u ON r.user_id = u.id
     INNER JOIN bus b ON r.bus_id = b.route_id
@@ -290,10 +336,10 @@ def home():
     
     # Create time objects for the desired time range 8:30 to 4 PM
     start_time = time(8, 30)
-    end_time = time(16, 0)
+    end_time = time(18,30)
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
-    if datetime.today().weekday() in [3, 4, 5] and (start_time <= current_time <= end_time):
+    if datetime.today().weekday() in [2, 3, 4, 5] and (start_time <= current_time <= end_time):
         print("DA")
         title = "WOXSEN Bus Student Home"
         return render_template("student_home.html", title=title, routes=bus_routes.values())
@@ -322,7 +368,7 @@ def mail_details():
         
         # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
         query = """
-        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
+        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school
         FROM reservation r
         INNER JOIN users u ON r.user_id = u.id
         INNER JOIN bus b ON r.bus_id = b.route_id
@@ -364,7 +410,7 @@ def whats_details():
         
         # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
         query = """
-        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
+        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school
         FROM reservation r
         INNER JOIN users u ON r.user_id = u.id
         INNER JOIN bus b ON r.bus_id = b.route_id
@@ -481,11 +527,11 @@ def search_bus():
         cursor.execute(bus_seat_query)
         res = cursor.fetchone()
         if res is None:
-            add_bus_seats_query = f"INSERT INTO bus_seats (bus_number, total_seats, date,fare) VALUES ('{bus_number}', 30, '{bus_date}',{fare})"
+            add_bus_seats_query = f"INSERT INTO bus_seats (bus_number, total_seats, date,fare) VALUES ('{bus_number}', 40, '{bus_date}',{fare})"
             update_bus_fare_query = f"UPDATE bus SET fare = {fare} WHERE bus_number = '{bus_number}'"
             cursor.execute(add_bus_seats_query)
             cursor.execute(update_bus_fare_query)
-            total_seats = 30
+            total_seats = 40
         else:
             total_seats = res[0]
             fare = res[1]
@@ -498,7 +544,7 @@ def search_bus():
     close()
     return jsonify({"data":resp_dict}), 200
 
-@app.route("/book-seat" )
+@app.route("/book-seat")
 @jwt_or_redirect()
 def reserve_seat():
     return render_template("seat_booking.html")
@@ -615,7 +661,6 @@ Your booking details are as follows:
 Booking Date: {dct['date']}
 Bus Number: {dct['bus_number']}
 Driver Details: {decoded_additional_details}
-Transaction ID: {dct['transaction_id']}
     """
     decoded = unquote(body)
     print(F"sending data : {decoded}")
@@ -638,7 +683,6 @@ def send_confirmation_mail(dct, decoded_additional_details):
     <p><b>Booking Date</b>: {dct['date']}</p>    
     <p><b>Bus Number</b>: {dct['bus_number']}</p>
     <p><b>Driver Details</b>:<br> {decoded_additional_details_html}</p>
-    <p><b>Transaction ID</b>: {dct['transaction_id']}</p>
     """
     
     msgHtml = MIMEText(body, "html")
