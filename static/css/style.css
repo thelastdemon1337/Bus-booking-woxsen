@@ -11,20 +11,18 @@ body {
     background-color: #f1f1f1;
     display: flex;
     justify-content: center;
-    padding-top: 12%;
+    align-items: center; /* Center vertically and horizontally */
 }
 
 .form-content {
-    height: fit-content;
-    width: 400px;
+    
+    width: 100%;
+    max-width: 400px;
     background-color: #fff;
     padding: 30px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    /* justify-content: center; */
-    align-items: center;
+    text-align: center;
 }
 
 .form-content h1 {
@@ -98,4 +96,22 @@ body {
 #snackbar-text {
     font-family: sans-serif;
     text-transform: capitalize;
+}
+
+
+
+@media (max-width: 768px) {
+    .form-content {
+        max-width: 400px; /* Full width for smaller screens */
+    }
+}
+@media (max-width: 379px) {
+    .form-content {
+        max-width: 300px; /* Full width for smaller screens */
+    }
+}
+@media (max-width: 375px) {
+    .form-content {
+        max-width: 300px; /* Full width for smaller screens */
+    }
 }

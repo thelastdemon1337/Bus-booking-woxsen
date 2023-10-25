@@ -18,14 +18,15 @@
         background-image: url("{{ url_for('static', filename='img/bg.jpeg')   }}");
         background-repeat: no-repeat;
         background-size: cover;
+        position: relative;
       }
     </style>
   </head>
 
   <body>
-    <div id="snackbar">
+    <!-- <div id="snackbar">
       <p id="snackbar-text"></p>
-    </div>
+    </div> -->
     {% block content %} {% endblock content %}
     <script>
         const snackbar = document.getElementById("snackbar");

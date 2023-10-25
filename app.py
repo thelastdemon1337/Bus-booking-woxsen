@@ -8,7 +8,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import uuid
-
+import ssl
 from datetime import datetime, timedelta, timezone, time
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
@@ -100,52 +100,6 @@ def refresh_expiring_jwts(response):
     except Exception as e:
         return response
 
-# @app.route("/signup", methods=["GET", "POST"])
-# def login():
-#     error = ""
-#     # if jwt is present in cookies, redirect to dashboard
-    
-#     if request.method == "GET":
-#         title = "WOXSEN Bus Signup"
-#         return render_template("signup.html", title=title)
-    
-#     if request.method == "POST":
-#         form_data = request.form
-#         user_mail = form_data.get("email")
-#         pwd = form_data.get("password")
-        
-#         if user_mail is None or pwd is None:
-#             error = "email or password is missing"
-#             return render_template("login.html", error=error)
-        
-        
-#         cursor, _, close = connect_db() # (cursor, save, close)
-#         # cursor = conn[0]
-#         # save = conn[1]
-#         # close = conn[2]
-        
-#         query = "SELECT id,role FROM users WHERE email = ? AND password = ?"
-        
-#         cursor.execute(query, (user_mail, pwd))
-        
-#         result = cursor.fetchone() # None or (1, "admin")
-        
-#         if result is None:
-#             error = "email or password is incorrect"
-#             return render_template("login.html", error=error)
-    
-#         user_id = result[0]
-#         role = result[1]
-        
-#         close()
-        
-#         response = redirect(url_for('home'))
-        
-#         expires = timedelta(days=1)
-#         access_token = create_access_token(identity={"email": user_mail,"id": user_id, "role": role}, expires_delta=expires)
-#         set_access_cookies(response, access_token)
-#         return response
-    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = ""
@@ -198,7 +152,16 @@ def login():
         access_token = create_access_token(identity={"email": user_mail,"id": user_id, "role": role}, expires_delta=expires)
         set_access_cookies(response, access_token)
         return response
-    
+
+
+@app.route("/signup")
+def signup():
+    return render_template("register.html")
+
+@app.route("/otp")
+def otp():
+    return render_template("otp.html")
+
 
 @app.route("/logout")
 def logout():
@@ -336,10 +299,10 @@ def home():
     
     # Create time objects for the desired time range 8:30 to 4 PM
     start_time = time(8, 30)
-    end_time = time(18,30)
+    end_time = time(16, 0)
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
-    if datetime.today().weekday() in [2, 3, 4, 5] and (start_time <= current_time <= end_time):
+    if datetime.today().weekday() in [0, 1, 2, 3, 4, 5] and (start_time <= current_time <= end_time):
         print("DA")
         title = "WOXSEN Bus Student Home"
         return render_template("student_home.html", title=title, routes=bus_routes.values())
@@ -704,4 +667,4 @@ def send_confirmation_mail(dct, decoded_additional_details):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port = 5123)
+    app.run(debug=True, port = 5124)

@@ -1,5 +1,5 @@
 #student_home {
-    height: 100vh;
+    height: auto;
     width: 100%;
 }
 
@@ -376,3 +376,106 @@ label img {
   box-shadow: none;
   transform: translateY(0);
 }
+
+@media (max-width: 768px) {
+    #student_home .search-bar {
+      flex-direction: column; /* Stack elements vertically on smaller screens */
+    }
+  
+    #day-selector {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  
+    .route-selector details {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  
+    details summary {
+      padding: 0.5rem; /* Smaller padding for better mobile experience */
+    }
+  
+    ul.list {
+      max-height: 150px; /* Reduced height for scrolling on mobile screens */
+    }
+  
+    .search-bar .search-btn {
+      text-align: center; /* Center align button on mobile screens */
+      margin-top: 10px; /* Add spacing between button and other elements */
+    }
+  
+    .bus-cards .bus-card {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  
+    .bus-card .item-1 {
+      border-right: none; /* Remove border on mobile screens */
+    }
+  
+    .bus-card .item-1 .item-content {
+      padding: 0.5rem; /* Smaller padding for better mobile experience */
+    }
+  
+    .bus-card .item-2 .item-content {
+      padding: 0.5rem; /* Smaller padding for better mobile experience */
+    }
+  
+    .bus-details .travel-time {
+      font-size: 1rem; /* Smaller font size for better mobile experience */
+    }
+  
+    .button-27 {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  }
+  /* Mobile Styles (Up to 320px) */
+@media (max-width: 320px) {
+    #student_home .search-bar {
+      flex-direction: column; /* Stack elements vertically on very small screens */
+    }
+  
+    #day-selector {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  
+    .route-selector details {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  
+    details summary {
+      padding: 0.5rem; /* Smaller padding for better mobile experience */
+    }
+  
+    ul.list {
+      max-height: 150px; /* Reduced height for scrolling on very small screens */
+    }
+  
+    .search-bar .search-btn {
+      text-align: center; /* Center align button on very small screens */
+      margin-top: 10px; /* Add spacing between button and other elements */
+    }
+  
+    .bus-cards .bus-card {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  
+    .bus-card .item-1 {
+      border-right: none; /* Remove border on very small screens */
+    }
+  
+    .bus-card .item-1 .item-content {
+      padding: 0.5rem; /* Smaller padding for better mobile experience */
+    }
+  
+    .bus-card .item-2 .item-content {
+      padding: 0.5rem; /* Smaller padding for better mobile experience */
+    }
+  
+    .bus-details .travel-time {
+      font-size: 1rem; /* Smaller font size for better mobile experience */
+    }
+  
+    .button-27 {
+      width: 100%; /* Full width for better mobile experience */
+    }
+  }
+  

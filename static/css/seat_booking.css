@@ -152,3 +152,67 @@ button {
 .p-2 {
   padding: 1rem;
 }
+
+
+@media (max-width: 768px) {
+  body {
+      font-size: 16px;
+  }
+
+  #seat-booking-main {
+      flex-direction: column;
+      align-items: center;
+  }
+
+  .seats, .pricing {
+      flex: 1 0 auto;
+      margin: 0;
+      margin-bottom: 1rem;
+      padding: 1rem;
+  }
+
+  .pricing {
+      flex-basis: auto;
+  }
+
+  .seat-status-item {
+      column-gap: 0.2rem;
+  }
+
+  .select-seats {
+      height: auto;
+  }
+
+  .select-seats .grey-bars {
+      display: none;
+  }
+
+  .select-seats .driver {
+      width: auto;
+      border-right: none;
+      margin-top: 0;
+      text-align: left;
+  }
+
+  .all-seats {
+      flex-direction: column;
+      padding: 0.4rem 0.5rem;
+      column-gap: 0;
+  }
+
+  .seat-column img {
+      transform: rotate(0deg);
+      width: 1.5rem;
+  }
+  .passenger{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .passenger-group {
+      display: block;
+      margin-top: 1rem; /* Add spacing between stacked inputs */
+  }
+}

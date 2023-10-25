@@ -1,5 +1,6 @@
 {# templates/student_home.html #} {% extends "common_layout.html" %} {% block
 content %}
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <div id="student_home">
   <div class="search-bar">
 <div class="day-selector">
@@ -7,6 +8,7 @@ content %}
         <option value="home" selected>To City</option>
         <option value="campus">To Campus</option>
       </select>
+    <div style="width: 100%;height: 10px;"></div>
     </div>
     <div class="route-selector">
       <details class="custom-select">
@@ -43,6 +45,7 @@ content %}
       </details>
     </div>
 
+    <div style="width: 100%;height: 10px;"></div>
 
     <!-- date selector default today-->
     <div class="date-selector" onclick="openCalender()">
