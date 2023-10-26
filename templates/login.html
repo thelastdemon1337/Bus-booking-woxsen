@@ -7,12 +7,28 @@
       <input type="email" name="email" placeholder="Email" />
       <input type="password" name="password" placeholder="Password" />
       <button type="submit" >Login</button>
-      <p>Don't have an acoount <a href="#">Register Here</a></p>
+      <p>Don't have an acoount <a href="signup">Register Here</a></p>
     </form>
   </div>
 </div>
 
 <script>
+  // Function to parse query parameters from the URL
+  function getQueryParam(parameterName) {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    return urlParams.get(parameterName);
+  }
+
+  // Retrieve the 'error' query parameter
+  const error = getQueryParam('error');
+
+  // Now you can use the 'error' variable in your JavaScript code
+  if (error) {
+    console.log("Error message: " + error);
+    alert(error)
+    // Perform any actions with the error message
+  }
   const inputEmail = document.querySelector('input[name="email"]');
   const inputPassword = document.querySelector('input[name="password"]');
   const btnLogin = document.querySelector("button[type='submit']");

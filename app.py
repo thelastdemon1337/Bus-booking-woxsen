@@ -20,6 +20,7 @@ from flask_jwt_extended import JWTManager
 from urllib.parse import unquote
 import pywhatkit
 import pytz
+import random
 
 app = Flask(__name__)
 
@@ -153,14 +154,132 @@ def login():
         set_access_cookies(response, access_token)
         return response
 
+def send_otp_mail(user_mail, gotp):
+    
+    msg = MIMEMultipart()
+    
+    msg["From"] = from_
+    msg["To"] = user_mail
+    msg["Subject"] = "Woxsen Bus Booking Confirmation"
+    
+    name = user_mail.split('@')[0]
+    
+    body = f"""
+    <h1>Hi {name},</h1>
+    <p>Thank you for signing up with Woxsen Bus Booking System.</p>
+    <p><b>Your OTP for signing up</b>: {gotp}</p>    
+    """
+    
+    msgHtml = MIMEText(body, "html")
+    
+    msg.attach(msgHtml)
+    
+    conn = smtplib.SMTP("smtp.gmail.com", 587)
+    conn.starttls()
+    
+    conn.login(from_, pwd)
 
-@app.route("/signup")
+    conn.sendmail(from_, msg["To"], msg.as_string())
+    print("Sent mail.")
+    
+    conn.close()
+
+@app.route("/signup", methods=["GET", "POST"])
 def signup():
-    return render_template("register.html")
+    error = ""
+    # if jwt is present in cookies, redirect to dashboard
+    if request.cookies.get("access_token_cookie"):
+        # verify jwt and redirect to dashboard
+        try:
+            verify_jwt_in_request()
+            return redirect(url_for('home'))
+        except:
+            pass
+    
+    if request.method == "GET":
+        title = "WOXSEN Bus Signup"
+        error = request.args.get('error')
+        return render_template("signup.html", title=title, error=error)
+    
+    if request.method == "POST":
+        form_data = request.form
+        user_mail = form_data.get("email")
+        pwd = form_data.get("password")
+        # username = form_data.get("username")
 
-@app.route("/otp")
+        print(F"user_mail : {user_mail}\npwd : {pwd}")
+        
+        if user_mail is None or pwd is None:
+            error = "email or password is missing"
+            return render_template("signup.html", error=error)
+
+        # check if existing user
+        cursor, _, close = connect_db() # (cursor, save, close)
+        # cursor = conn[0]
+        # save = conn[1]
+        # close = conn[2]
+        
+        query = "SELECT id,role FROM users WHERE email = ? AND password = ?"
+        
+        cursor.execute(query, (user_mail, pwd))
+        
+        result = cursor.fetchone() # None or (1, "admin")
+        
+        if result is not None:
+            error = "User already exists with this mail, please login instead"
+            return redirect(url_for('login', error=error))
+        
+        close()
+        
+        # otp gen and mail
+        gotp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        print(f"otp generated: {gotp}")
+
+        send_otp_mail(user_mail, gotp)
+        return redirect(url_for('otp', user_mail=user_mail, pwd=pwd, gotp=gotp))
+
+@app.route("/otp", methods=["GET", "POST"])
 def otp():
-    return render_template("otp.html")
+    error = ""
+    if request.method == "GET":
+        title = "WOXSEN Bus Signup"
+        return render_template("otp.html")
+    
+    if request.method == "POST":
+        form_data = request.form
+        fotp = form_data.get("otp")
+        gotp = request.args.get('gotp')
+        print(F"fotp : {fotp}    gotp : {gotp}")
+        if fotp == gotp:
+            user_mail = request.args.get('user_mail')
+            pwd = request.args.get('pwd')
+            print(F"Usermail and pwd in otp route : {user_mail}  {pwd}")
+            cursor, save, close = connect_db() # (cursor, save, close)
+            # cursor = conn[0]
+            # save = conn[1]
+            # close = conn[2]
+            
+            # query = "SELECT id,role FROM users WHERE email = ? AND password = ?"
+
+            query = "INSERT INTO users (username, email, password, address, role) VALUES (?, ?, ?, ?, ?)"
+            
+            cursor.execute(query, ("woxsen_student", user_mail, pwd, "Woxsen", "student"))
+
+            # query = "SELECT * FROM users"
+            
+            cursor.execute(query)
+            result = cursor.fetchall()
+            print(result)
+            
+            save()
+            close()
+            print("user stored in db")
+            return redirect(url_for('login'))
+        else:
+            error = "OTP Validation Failure"
+            return redirect(url_for('signup', error = error))
+        
+
 
 
 @app.route("/logout")
@@ -299,7 +418,7 @@ def home():
     
     # Create time objects for the desired time range 8:30 to 4 PM
     start_time = time(8, 30)
-    end_time = time(16, 0)
+    end_time = time(18, 0)
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
     if datetime.today().weekday() in [0, 1, 2, 3, 4, 5] and (start_time <= current_time <= end_time):
@@ -627,7 +746,7 @@ Driver Details: {decoded_additional_details}
     """
     decoded = unquote(body)
     print(F"sending data : {decoded}")
-    pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 8, tab_close=True)
+    pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 10, tab_close=True)
 
 def send_confirmation_mail(dct, decoded_additional_details):
     print(decoded_additional_details)
@@ -667,4 +786,4 @@ def send_confirmation_mail(dct, decoded_additional_details):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port = 5124)
+    app.run(debug=True, port = 5123)
