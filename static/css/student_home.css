@@ -19,6 +19,8 @@
     height: 50px;
     border-radius: 6px;
     width: 140px;
+    margin-top: 10px;
+    border: 1px solid #ddd
 }
 
 
@@ -384,6 +386,7 @@ label img {
   
     #day-selector {
       width: 100%; /* Full width for better mobile experience */
+      height: 35px;
     }
   
     .route-selector details {

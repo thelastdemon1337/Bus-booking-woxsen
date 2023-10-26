@@ -267,7 +267,7 @@ def otp():
 
             # query = "SELECT * FROM users"
             
-            cursor.execute(query)
+            # cursor.execute(query)
             result = cursor.fetchall()
             print(result)
             
