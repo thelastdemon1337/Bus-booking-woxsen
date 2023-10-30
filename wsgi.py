@@ -18,7 +18,7 @@ from flask_jwt_extended import set_access_cookies
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import JWTManager
 from urllib.parse import unquote
-import pywhatkit
+# import pywhatkit
 import pytz
 import random
 
@@ -100,6 +100,10 @@ def refresh_expiring_jwts(response):
         return response
     except Exception as e:
         return response
+
+@app.route("/")
+def redirect_app():
+    return redirect(url_for('login'))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -746,7 +750,7 @@ Driver Details: {decoded_additional_details}
     """
     decoded = unquote(body)
     print(F"sending data : {decoded}")
-    pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 10, tab_close=True)
+    # pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 10, tab_close=True)
 
 def send_confirmation_mail(dct, decoded_additional_details):
     print(decoded_additional_details)
