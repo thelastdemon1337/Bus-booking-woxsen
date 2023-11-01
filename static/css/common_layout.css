@@ -67,10 +67,15 @@
     user-select: none;
 }
 
-.nav-bar .nav-heading a {
+/* .nav-bar .nav-heading a {
     font-size: 2rem;
     margin-left: 20px;
     color: #fff;
+} */
+
+.nav-bar img{
+  width: 20%;
+  height: 80%;
 }
 
 .nav-bar .nav-items {
