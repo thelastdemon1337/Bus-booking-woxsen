@@ -1,3 +1,4 @@
+
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
@@ -8,12 +9,96 @@
 	<style>
 		@import url(//cdnjs.cloudflare.com/ajax/libs/normalize/3.0.1/normalize.min.css);
 		@import url(//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css);
+	
+	body{
+		margin: 0;
+		padding: 0 !important;
+	}
+		.nav-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+	height: 10%;
+    background-color: lightblue;
+    /* padding-block: 1rem; */
+    color: #fff;
+}
+.nav-heading{
+	width: 30%;
+	height: 100%;
+}
+.nav-bar a {
+    text-decoration: none;
+    user-select: none;
+}
+
+.nav-bar .nav-heading a {
+    font-size: 2rem;
+    margin-left: 20px;
+    color: #fff;
+}
+
+.nav-bar .nav-items {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    width: fit-content;
+    padding-inline: 2rem;
+    column-gap: 2rem;
+    align-items: flex-end;
+}
+
+
+.nav-bar .nav-items a {
+    padding: .4rem .8rem;
+    font-size: 1rem;
+    border-radius: 3px;
+    color: #fff;
+}
+
+.nav-bar .nav-items .nav-item a:hover {
+    background-color: #004643;
+}
+
+.nav-bar .nav-items .nav-item:last-child {
+    flex: 1;
+    text-align: end;
+    font-size: 1rem;
+}
+
+.nav-bar .nav-items .nav-item:last-child a {
+    color: #004643;
+    font-weight: 600;
+    font-size: 1rem;
+    background-color: #fff;
+}
+
+
 	</style>
 	<link rel="stylesheet" href="https://2-22-4-dot-lead-pages.appspot.com/static/lp918/min/default_thank_you.css">
 	<script src="https://2-22-4-dot-lead-pages.appspot.com/static/lp918/min/jquery-1.9.1.min.js"></script>
 	<script src="https://2-22-4-dot-lead-pages.appspot.com/static/lp918/min/html5shiv.js"></script>
 </head>
 <body>
+	<div class="nav-bar">
+		<!-- nav heading logo -->
+	
+		<div class="nav-heading">
+		  <!-- <a href="">Woxsen</a> -->
+		  <img src="/static//img//woxsen.png" style="width: 30%;height: 0%;" />
+		</div>
+	
+		<div class="nav-items">
+		  <div class="nav-item">
+			<!-- <a href="/home" onclick="clearLocalsStorage()">Book</a> -->
+		  </div>
+		  <div class="nav-item">
+			<a href="/logout">Logout</a>
+		  </div>
+		</div>
+	  </div>
 	<header class="site-header" id="header">
 		<h1 class="site-header__title" data-lead-id="site-header-title">YOUR BOOKING HAS BEEN CONFIRMED!</h1>
 	</header>
@@ -34,7 +119,7 @@
     </script>
 
 	<footer class="site-footer" id="footer">
-		<p class="site-footer__fineprint" id="fineprint">Copyright Woxsen ©2023 | All Rights Reserved</p>
+		<p class="site-footer__fineprint" id="fineprint" style="font-size: 25px;">Powered By AI Research Center</p>
 	</footer>
 </body>
 </html>

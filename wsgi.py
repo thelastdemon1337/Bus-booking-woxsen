@@ -425,7 +425,7 @@ def home():
     end_time = time(18, 0)
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
-    if datetime.today().weekday() in [0, 1, 2, 3, 4, 5]:
+    if datetime.today().weekday() in [0, 1, 2, 3, 4, 5] and (start_time <= current_time <= end_time):
         print("DA")
         title = "WOXSEN Bus Student Home"
         return render_template("student_home.html", title=title, routes=bus_routes.values())
