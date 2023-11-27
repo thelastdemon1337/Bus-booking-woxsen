@@ -30,7 +30,7 @@ app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 from_ = "woxsenailab@gmail.com"
-pwd = "nrkqjrighuffuxwx"
+pwd = "ycoviljsqtfrtoul"
 
 jwt = JWTManager(app)
 
