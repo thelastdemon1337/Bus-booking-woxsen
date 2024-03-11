@@ -207,11 +207,16 @@ def signup():
     
     if request.method == "POST":
         form_data = request.form
+        print(F"Form data : \n {form_data}")
         user_mail = form_data.get("email")
         pwd = form_data.get("password")
+        mobile = form_data.get("mobile")
+        school = form_data.get("school")
+        name = form_data.get("name")
+        stu_id = form_data.get("stu_id")
         # username = form_data.get("username")
 
-        print(F"user_mail : {user_mail}\npwd : {pwd}")
+        print(F"user_mail : {user_mail}\npwd : {pwd}\nmobile : {name}\nmobile : {mobile}\nschool : {school}\nstu_id : {stu_id}")
         
         if user_mail is None or pwd is None:
             error = "email or password is missing"
