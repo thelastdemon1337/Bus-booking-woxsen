@@ -67,15 +67,13 @@ content %}
       <div style="margin: 1rem auto; width: 80%;">
         <label for="seats">Select no of seats</label>
         <select name="no_seats" id="seats">
-          <option value="1" selected>1</option>
+          <option value="0" selected>0</option>
+          <option value="1">1</option>
           <option value="2">2</option>
           <option value="3">3</option>
-          <option value="4">4</option>
         </select>
       </div>
-      <div style="margin: 1rem auto; width: 80%;">
-        <input type="checkbox" name="myself" id="myself"> Myself
-      </div>
+      
     </div>
 
   </div>
@@ -83,7 +81,7 @@ content %}
     <div class="passenger-detail-heading">
       <h3>Add passengers info</h3>
     </div>
-
+      <input style="margin-left: 20px; margin-top: 20px;" type="checkbox" name="myself" id="myself" checked> Myself
     <div class="allPassenger">
 
     </div>
@@ -160,12 +158,58 @@ content %}
   }
 
   function proceedToPayment() {
+    console.log("Executing proceed to payment function")
     // get all passenger details
     const passengerGroup = document.querySelectorAll(".passenger");
 
     const booking = JSON.parse(localStorage.getItem("booking"));
 
     const passengers = [];
+
+    // Get the checkbox element
+    var checkbox = document.getElementById("myself");
+      console.log("chekpoint 1")
+      if (checkbox.checked) {
+        console.log("checkbox checked")
+        const userString = '{{ user|tojson|safe }}';  // Convert Python list to JSON string
+        const user = JSON.parse(userString); 
+        console.log(user)
+        
+        const name = user[2]
+        const email = user[4]
+        const school = user[6]
+        const studentId = user[1]
+        const phone = user[3]
+
+        const passenger_ = {
+          name,
+          email,
+          school,
+          studentId,
+          phone,
+        };
+        console.log(passenger_)
+
+        passengers.push(passenger_);
+        booking.passengers = passengers;
+
+        booking.seats = Number(selectTag.value) + 1;
+
+        localStorage.setItem("booking", JSON.stringify(booking));
+        // create a tag with href attribute value as /passenger-details
+        if (passengerGroup.length == 0) {
+          const a = document.createElement("a");
+        a.href = `/payment`;
+
+        // add a tag to the body
+        document.body.appendChild(a);
+
+        // click on the a tag
+        a.click();
+        }
+        console.log("Successfully added booking of current logged in user!")
+      }
+
     passengerGroup.forEach((passenger, index) => {
       const name = passenger.querySelector('input[type="text"]').value;
       const email = passenger.querySelector('input[type="email"]').value;
@@ -178,6 +222,8 @@ content %}
         alert("Please fill all the fields");
         return;
       }
+
+      
 
       const passenger_ = {
         name,
@@ -208,6 +254,21 @@ content %}
   }
 
   start();
+  // to delete after successfully exectuted
+  // function onCheckboxClick() {
+  //           // Check if the checkbox is checked
+  //           if (checkbox.checked) {
+  //               // Your custom logic here
+  //               console.log("Checkbox clicked");
+  //           } else {
+  //               console.log("Checkbox unchecked");
+  //           }
+  //       }
+
+  
+
+  // // Attach an event listener to execute the function on click
+  // checkbox.addEventListener("click", onCheckboxClick);
 
 </script>
 

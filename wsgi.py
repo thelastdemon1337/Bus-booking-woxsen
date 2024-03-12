@@ -130,7 +130,7 @@ def login():
             error = "email or password is missing"
             return render_template("login.html", error=error)
         
-        
+        print(F"email : {user_mail} password : {pwd}")
         cursor, _, close = connect_db() # (cursor, save, close)
         # cursor = conn[0]
         # save = conn[1]
@@ -143,8 +143,11 @@ def login():
         result = cursor.fetchone() # None or (1, "admin")
         
         if result is None:
+            print(result)
             error = "email or password is incorrect"
             return render_template("login.html", error=error)
+        else:
+            print(F"debug admin login : {result}")
     
         user_id = result[0]
         role = result[1]
@@ -245,7 +248,7 @@ def signup():
         print(f"otp generated: {gotp}")
 
         send_otp_mail(user_mail, gotp)
-        return redirect(url_for('otp', user_mail=user_mail, pwd=pwd, gotp=gotp))
+        return redirect(url_for('otp', user_mail=user_mail, pwd=pwd, gotp=gotp, mobile=mobile, school=school, name=name, stu_id=stu_id))
 
 @app.route("/otp", methods=["GET", "POST"])
 def otp():
@@ -262,6 +265,13 @@ def otp():
         if fotp == gotp:
             user_mail = request.args.get('user_mail')
             pwd = request.args.get('pwd')
+            name = request.args.get('name')
+            mobile = request.args.get('mobile')
+            school = request.args.get('school')
+            stu_id = request.args.get('stu_id')
+
+            print("In OTP:")
+            print()
             print(F"Usermail and pwd in otp route : {user_mail}  {pwd}")
             cursor, save, close = connect_db() # (cursor, save, close)
             # cursor = conn[0]
@@ -270,9 +280,9 @@ def otp():
             
             # query = "SELECT id,role FROM users WHERE email = ? AND password = ?"
 
-            query = "INSERT INTO users (username, email, password, address, role) VALUES (?, ?, ?, ?, ?)"
+            query = "INSERT INTO users (stu_id, name, mobile, email, password, school, role) VALUES (?, ?, ?, ?, ?, ?, ?)"
             
-            cursor.execute(query, ("woxsen_student", user_mail, pwd, "Woxsen", "student"))
+            cursor.execute(query, (stu_id, name, mobile, user_mail, pwd, school, "student"))
 
             # query = "SELECT * FROM users"
             
@@ -638,7 +648,19 @@ def search_bus():
 @app.route("/book-seat")
 @jwt_or_redirect()
 def reserve_seat():
-    return render_template("seat_booking.html")
+    user_mail = get_jwt_identity()['email']
+    print(F"temp_debugging : {user_mail}")
+    cursor, save, close = connect_db()
+        
+    # Update seats and fare in the bus table for bus_number and date
+    user_query = F"SELECT * FROM users WHERE email='{user_mail}'"
+    cursor.execute(user_query)
+    user = cursor.fetchone()
+    user_list = list(user)
+    close()
+    print(user_list)
+
+    return render_template("seat_booking.html", user=user_list)
 
 @app.route("/passenger-details")
 @jwt_or_redirect()
@@ -658,6 +680,8 @@ def generate_transaction_id():
 @jwt_or_redirect()
 def make_payment():
     user = get_jwt_identity()
+    print("Debugging make payment route")
+    print(user)
     user_id = user["id"]
     form_data = request.form
     
