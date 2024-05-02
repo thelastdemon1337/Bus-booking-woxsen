@@ -9,7 +9,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import uuid
 import ssl
-from datetime import datetime, timedelta, timezone, time
+from datetime import datetime, timedelta, timezone
+from datetime import time as dt_time
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
@@ -17,11 +18,16 @@ from flask_jwt_extended import get_jwt
 from flask_jwt_extended import set_access_cookies
 from flask_jwt_extended import verify_jwt_in_request
 from flask_jwt_extended import JWTManager
+from jwt import encode, decode
 from urllib.parse import unquote
 # import pywhatkit
 import pytz
 import random
-
+import requests
+import os
+from dotenv import load_dotenv
+load_dotenv()
+import time
 app = Flask(__name__)
 
 
@@ -333,7 +339,7 @@ def download_csv():
     
     # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
     query = """
-    SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school
+    SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
     FROM reservation r
     INNER JOIN users u ON r.user_id = u.id
     INNER JOIN bus b ON r.bus_id = b.route_id
@@ -345,6 +351,7 @@ def download_csv():
     result = cursor.fetchall()
     
     dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
+    print("Debugging CSV add transaction ID:")
     print(dict_result[:1])
     print("entering create_csv fun")
     create_csv(dict_result)
@@ -436,8 +443,8 @@ def home():
     current_time = datetime.now(ist_timezone).time()
     
     # Create time objects for the desired time range 8:30 to 4 PM
-    start_time = time(8, 30)
-    end_time = time(18, 0)
+    start_time = dt_time(8, 30)
+    end_time = dt_time(18, 0)
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
     if datetime.today().weekday() in [0, 1, 2, 3, 4, 5] and (start_time <= current_time <= end_time):
@@ -469,7 +476,7 @@ def mail_details():
         
         # get all reservations for bus_id on travel_date (email, username, seat, date, bus_number)
         query = """
-        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school
+        SELECT r.date, b.bus_number,r.p_name as passenger_name, r.p_email as passenger_email, r.p_phone as passenger_phone, r.p_school as passenger_school, r.transaction_id as transaction_id
         FROM reservation r
         INNER JOIN users u ON r.user_id = u.id
         INNER JOIN bus b ON r.bus_id = b.route_id
@@ -481,7 +488,7 @@ def mail_details():
         result = cursor.fetchall()
         
         dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
-        print(F"dict result in mail : {dict_result}")
+        print(F"dict result in mail debugging for tx_id: {dict_result}")
         for dct in dict_result:
             send_confirmation_mail(dct, decoded_additional_details)
             # print(F"dict : {dct['passenger_email']}")
@@ -667,20 +674,71 @@ def reserve_seat():
 def add_passenger():
     return render_template("add_passenger.html")
 
-@app.route("/payment", methods=["POST", "GET"])
+
+# Billdesk Logic
+def jws_encode(headers, payload, secret_key, algorithm):
+    return encode(payload, secret_key, algorithm=algorithm, headers=headers)
+
+def decode_jwt_signature(token, secret_key, algorithm='HS256', headers=None):
+    return decode(token, secret_key, algorithms=[algorithm], headers=headers)
+
+@app.route('/thankyou', methods=['GET', 'POST'])
+def thank_you():
+    return render_template('thankyou.html')
+
+@app.route('/close_popup', methods=['GET', 'POST'])
+def close_popup():
+    return render_template('close_popup.html')
+
+# global order_id
+# client_id = 'bduatv2apt'
+client_id = os.getenv('CLIENT_ID')
+secret_key = os.getenv('SECRET_KEY')
+mid = os.getenv('MERCHANT_ID')
+
+
+@app.route('/txn_response', methods=['GET', 'POST'])
+def txn_response():
+    print("Hit txn Route")
+    print(F"OID from outside : {order_id}")
+    headers = {
+            "clientid": client_id,
+            "alg": "HS256"
+        }
+    payload = {
+                "mercid":"BDUATV2APT",
+                "orderid": order_id,
+                } 
+    response = requests.post(
+            'https://uat1.billdesk.com/u2/payments/ve1_2/transactions/get',
+            headers={
+                'Content-Type': 'application/jose',
+                'Accept' : 'application/jose',
+                'BD-Traceid': str(int(time.time())) + 'ABCD12345',
+                'BD-Timestamp': str(datetime.now().strftime("%Y%m%d%H%M%S")),
+                # 'Authorization': jws_encode(headers, payload, secret_key, 'HS256')
+            },
+            data=jws_encode(headers=headers,payload=payload, secret_key=secret_key, algorithm='HS256')
+        )
+    # print(response.text)
+    jwt_txn_response = decode_jwt_signature(response.text, secret_key, 'HS256', headers)
+    auth_status = str(jwt_txn_response["auth_status"] )
+    transaction_status = jwt_txn_response["transaction_error_type"]
+    global tx_id
+    tx_id = jwt_txn_response["transactionid"]
+    print(auth_status, transaction_status, tx_id)
+    if auth_status == '0300' and transaction_status == 'success':
+            print(F'Transaction ID : {tx_id}')
+            # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
+            return render_template('savetodb.html')
+    else:
+        return render_template('Payment_Failed.html')
+
+@app.route("/thank_u", methods=["POST"])
 @jwt_or_redirect()
-def payment():
-    return render_template("payment_page.html")
-
-
-def generate_transaction_id():
-    return str(uuid.uuid4())
-
-@app.route("/make-payment", methods=["POST"])
-@jwt_or_redirect()
-def make_payment():
+def thank_u():
     user = get_jwt_identity()
-    print("Debugging make payment route")
+    print("Last but latest route")
     print(user)
     user_id = user["id"]
     form_data = request.form
@@ -704,6 +762,7 @@ def make_payment():
     }
     
     """
+    print("Printing latest booking object from savetodb page")
     print(booking)
     booking_date= booking["date"]
     
@@ -722,7 +781,8 @@ def make_payment():
     update_query = "INSERT INTO reservation (bus_id, date, seat,user_id, p_name,p_email, p_school, p_id,p_phone, day_type,transaction_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
     
     seat_nos = []
-    transaction_id = generate_transaction_id()
+    print(F"appending tx id : {tx_id}")
+    transaction_id = tx_id
     for index, passenger in enumerate(booking['passengers'],start=1):
         seat_no = f"L{total_occuiped_seats + index}"
         seat_nos.append(seat_no)
@@ -744,27 +804,102 @@ def make_payment():
     bus_number = cursor.fetchone()[0]
     print(F"Bus_Number : {bus_number}")
     
-    # # get username from user table
-    # query = "SELECT username FROM users WHERE id = ?"
-    
-    # cursor.execute(query, (user_id,))
-    
-    # username = cursor.fetchone()[0] 
 
     save()
     close()
-    
-    # booking = {
-    #     "bus_number": bus_number,
-    #     "date": booking_date,
-    #     "seats": ", ".join(seat_nos),
-    #     "transaction_id": transaction_id,
-    # }
-    
-    # mail functionality
-    # send_confirmation_mail(user["email"], username, booking)
-    return render_template("thankyou.html")
+
+    return render_template('thankyou.html')
     # return redirect(url_for("logout"))
+
+
+@app.route("/payment", methods=["POST", "GET"])
+@jwt_or_redirect()
+def payment():
+    # if request.method == 'POST':
+    global order_id
+    order_id = 'WOX49fbe696e1' + str(random.randint(1000,9999))
+    amount = "450.00"
+    # order_date = int(time.time())
+    order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
+    # print(order_date)
+    currency = '356'
+    ru = 'http://localhost:5123/txn_response'
+    additional_info = {
+        "additional_info1": "B200910EC",
+        "additional_info2": "Anand",
+        "additional_info3": "abc@gmail.com",
+        "additional_info4": "NA",
+        "additional_info5": "NA",
+        "additional_info6": "NA",
+        "additional_info7": "NA"
+    }
+    item_code = 'DIRECT'
+    device = {
+        "init_channel": "internet",
+        "ip": "10.7.0.22",
+        "user_agent": "Mozilla/5.0",
+        "accept_header": "text/html",
+    }
+
+    payload = {
+        "mercid": mid,
+        "orderid": order_id,
+        "amount": amount,
+        "order_date": order_date,
+        "currency": currency,
+        "ru": ru,
+        "additional_info": additional_info,
+        "itemcode": item_code,
+        "device": device
+    }
+
+    headers = {
+        "clientid": client_id,
+        "alg": "HS256"
+    }
+
+    jws_request = jws_encode(headers, payload, secret_key, 'HS256')
+    # print(F'JWT Encoded token : {jws_request}')
+
+    response = requests.post(
+        'https://uat1.billdesk.com/u2/payments/ve1_2/orders/create',
+        headers={
+            'Content-Type': 'application/jose',
+            'Accept' : 'application/jose',
+            'BD-Traceid': str(int(time.time())) + 'ABCD12345',
+            'BD-Timestamp': str(datetime.now().strftime("%Y%m%d%H%M%S"))
+            # 'Authorization': jws_encode(headers, payload, secret_key, 'HS256')
+        },
+        data=jws_request
+    )
+    # print(response.text)
+    order_response = decode_jwt_signature(response.text, secret_key, 'HS256', headers)
+    # print(order_response)
+    flow_config = {
+        "merchantId": "BDUATV2APT",
+        "bdOrderId": order_response["bdorderid"],
+        "authToken": order_response["links"][1]["headers"]["authorization"],
+        "childWindow": False,
+        "returnUrl": "http://localhost:5123/txn_response",
+        "retryCount": 3,
+        "prefs": {
+        "payment_categories": ["card", "nb"],
+        "allowed_bins": ["459150", "525211"]
+        },
+        "netBanking":{
+        "showPopularBanks" : "Y",
+        "popularBanks": ["Kotak Bank"," AXIS Bank [Retail]"] 
+        }
+
+    }
+
+    if response.status_code == 200:
+        print('Order created successfully')
+        print(decode_jwt_signature(response.text, secret_key, 'HS256', headers))
+        # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
+        return render_template('payment_page.html', flow_config=flow_config)
+    else:
+        return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
 
 
 def send_whatsapp_message(dct, decoded_additional_details):
@@ -791,12 +926,15 @@ def send_confirmation_mail(dct, decoded_additional_details):
     msg["Subject"] = "Woxsen Bus Booking Confirmation"
     
     name = dct["passenger_name"]
+    transaction_id = dct["transaction_id"]
+    print(F"send_mail_function tx id : {transaction_id}")
     
     body = f"""
     <h1>Hi {name},</h1>
     <p>Thank you for booking with Woxsen Bus. Your booking details are as follows:</p>
     <p><b>Booking Date</b>: {dct['date']}</p>    
     <p><b>Bus Number</b>: {dct['bus_number']}</p>
+    <p><b>Transaction ID</b>: {transaction_id}</p>
     <p><b>Driver Details</b>:<br> {decoded_additional_details_html}</p>
     """
     

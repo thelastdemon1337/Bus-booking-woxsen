@@ -1,87 +1,89 @@
 {# templates/payment_page.html #} {% extends "common_layout.html" %} {% block
 content %}
-<article class="card" style="overflow-y: scroll">
-  <div class="container">
-    <div class="card-title">
-      <!-- <h2>Payment</h2> -->
-    </div>
-    <form action="/make-payment" method="post">
-      <div class="card-body">
-        <div class="payment-type">
-          <h1>Make payment to the below QR</h1>
-          <!-- <div class="types flex justify-center">
-            <div class="type selected">
-              <div class="logo">
-                <i class="far fa-credit-card"></i>
-              </div>
-              <div class="text">
-                <p>
-                  <img src="/static/img/upi.png" alt="upi-img" width="30" />
-                </p>
-              </div>
-            </div>
-          </div> -->
-        </div>
-        <img src="/static/img/upi_new.jpg" alt="upi-img" width="50%" />
-        <br> <br>
-        <h3>Payments will be subjected to verification!</h3>
-        <!-- <div class="payment-info flex" style="justify-content: center">
-          <div class="column shipping">
-            <div class="title">
-              <h4>YOUR UPI ID</h4>
-            </div>
-            <div class="field full">
-              <input
-                id="upi_id"
-                type="text"
-                placeholder="upi@id"
-                name="upi_id"
-              />
-            </div>
+
+<html>
+  <head>
+    <script type="module" src="https://uat1.billdesk.com/merchant-uat/sdk/dist/billdesksdk/billdesksdk.esm.js"></script>
+      <script nomodule="" src="https://uat1.billdesk.com/merchant-uat/sdk/dist/billdesksdk.js"></script>
+      <link href="https://uat1.billdesk.com/merchant-uat/sdk/dist/billdesksdk/billdesksdk.css" rel="stylesheet">
+  </head>
+  
+  <article class="card" style="overflow-y: scroll">
+    <div class="container">
+      <div class="card-title">
+        <!-- <h2>Payment</h2> -->
+      </div>
+        <div class="card-body">
+          <div class="payment-type">
+            <h1>Payment : Rs. 450</h1>
           </div>
-        </div> -->
-      </div>
-      <div class="card-actions flex justify-end">
-        <div class="flex-end">
-          <button class="button button-primary" type="submit">Done</button>
+          <br> <br>
+          <button class="button button-primary" onclick="launchBillDeskSDK()">Pay Now</button>
         </div>
-      </div>
-    </form>
-  </div>
-</article>
+    </div>
+  </article>
 
-<script>
-  const form = document.querySelector("form");
+  <!-- save to db logic -->
+  <!-- <script>
+    const form = document.querySelector("form");
+      // let upiID = document.getElementById("upi_id").value;
+      let upiID = "tarun@ybl"
+      // replace spaces with ""
+      upiID = upiID.replace(/\s/g, "");
 
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    // let upiID = document.getElementById("upi_id").value;
-    let upiID = "tarun@ybl"
-    // replace spaces with ""
-    upiID = upiID.replace(/\s/g, "");
+      const booking = JSON.parse(localStorage.getItem("booking"));
+      console.log("Form submission initiated")
+      console.log(booking)
+      booking["upi_id"] = upiID;
 
-    const booking = JSON.parse(localStorage.getItem("booking"));
-    booking["upi_id"] = upiID;
+      // create a new input element
+      const input = document.createElement("input");
+      // set its type
+      input.type = "hidden";
+      // set its name
+      input.name = "booking";
+      // set its value
+      input.value = JSON.stringify(booking);
+      // append it to the form
+      form.appendChild(input);
 
-    // create a new input element
-    const input = document.createElement("input");
-    // set its type
-    input.type = "hidden";
-    // set its name
-    input.name = "booking";
-    // set its value
-    input.value = JSON.stringify(booking);
-    // append it to the form
-    form.appendChild(input);
+      // form.submit();
+      if (upiID == "") {
+        alert("Please fill the UPI ID field");
+      } else {
+        localStorage.clear();
+        form.submit();
+      }
+  </script> -->
 
-    // form.submit();
-    if (upiID == "") {
-      alert("Please fill the UPI ID field");
-    } else {
-      localStorage.clear();
-      form.submit();
+  <script>
+    function launchBillDeskSDK() {
+        console.log("Launching Billdesk")
+        let flow_config = JSON.parse('{{ flow_config|tojson|safe }}');
+        console.log(`bdOrderId: ${flow_config.bdOrderId}`)
+        console.log(`flow config : ${flow_config}`)
+
+        var responseHandler = function (txn) {
+            console.log("callback received status:: ", txn.status);
+            console.log("callback received response:: ", txn.response);
+        };
+
+        var config = {
+            responseHandler: responseHandler,
+            flowType: "payments",
+            flowConfig : flow_config,
+            bdOrderId: flow_config.bdOrderId,
+            authToken: flow_config.authToken,
+            childWindow: false,
+            // returnUrl: "http://www.demo.com/api/pgresponse",
+            retryCount: 3
+        };
+
+        // BillDeskSDK.init(config);
+        window.loadBillDeskSdk(config)
     }
-  });
 </script>
+</html>
+
 
 {% endblock content %}
