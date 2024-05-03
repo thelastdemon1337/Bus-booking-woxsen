@@ -102,7 +102,7 @@ content %}
 
   selectTag.addEventListener("change", (e) => {
     const value = Number(e.target.value);
-    console.log(value);
+    console.log(`Payment numbers value : ${value}`);
     start();
   });
 
@@ -150,6 +150,21 @@ content %}
     const allPassenger = document.querySelector(".allPassenger");
     allPassenger.innerHTML = "";
     const seats = Number(selectTag.value);
+    console.log(`Seats log in start() func : ${seats+1}`)
+
+    fetch('/get_seat_no', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ 'no_seats': seats+1 }),
+    })
+    .then(response => {
+        console.log(response)
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
 
     Array.from({ length: seats }).forEach((_, index) => {
       const passenger = create_passenger_element(index + 1);
@@ -254,21 +269,6 @@ content %}
   }
 
   start();
-  // to delete after successfully exectuted
-  // function onCheckboxClick() {
-  //           // Check if the checkbox is checked
-  //           if (checkbox.checked) {
-  //               // Your custom logic here
-  //               console.log("Checkbox clicked");
-  //           } else {
-  //               console.log("Checkbox unchecked");
-  //           }
-  //       }
-
-  
-
-  // // Attach an event listener to execute the function on click
-  // checkbox.addEventListener("click", onCheckboxClick);
 
 </script>
 

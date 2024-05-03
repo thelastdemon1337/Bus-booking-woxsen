@@ -15,7 +15,7 @@ content %}
       </div>
         <div class="card-body">
           <div class="payment-type">
-            <h1>Payment : Rs. 450</h1>
+            <h1 id="pay">Payment : Rs. 450</h1>
           </div>
           <br> <br>
           <button class="button button-primary" onclick="launchBillDeskSDK()">Pay Now</button>
@@ -23,40 +23,11 @@ content %}
     </div>
   </article>
 
-  <!-- save to db logic -->
-  <!-- <script>
-    const form = document.querySelector("form");
-      // let upiID = document.getElementById("upi_id").value;
-      let upiID = "tarun@ybl"
-      // replace spaces with ""
-      upiID = upiID.replace(/\s/g, "");
-
-      const booking = JSON.parse(localStorage.getItem("booking"));
-      console.log("Form submission initiated")
-      console.log(booking)
-      booking["upi_id"] = upiID;
-
-      // create a new input element
-      const input = document.createElement("input");
-      // set its type
-      input.type = "hidden";
-      // set its name
-      input.name = "booking";
-      // set its value
-      input.value = JSON.stringify(booking);
-      // append it to the form
-      form.appendChild(input);
-
-      // form.submit();
-      if (upiID == "") {
-        alert("Please fill the UPI ID field");
-      } else {
-        localStorage.clear();
-        form.submit();
-      }
-  </script> -->
-
   <script>
+    console.log("Testing no_of_seats")
+    let no_seats = JSON.parse('{{ no_of_seats|tojson|safe }}');
+    console.log(no_seats)
+    document.getElementById("pay").innerText = `Payment : Rs. ${no_seats*450}`
     function launchBillDeskSDK() {
         console.log("Launching Billdesk")
         let flow_config = JSON.parse('{{ flow_config|tojson|safe }}');

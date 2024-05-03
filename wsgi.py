@@ -811,6 +811,13 @@ def thank_u():
     return render_template('thankyou.html')
     # return redirect(url_for("logout"))
 
+@app.route("/get_seat_no", methods=["POST", "GET"])
+@jwt_or_redirect()
+def get_seat_no():
+    global no_of_seats
+    no_of_seats = int(request.json.get('no_seats'))
+    print(F"received no of seats : {no_of_seats}, format : {type(no_of_seats)}")
+    return 'Successfully recieved by the python server', 200
 
 @app.route("/payment", methods=["POST", "GET"])
 @jwt_or_redirect()
@@ -818,7 +825,7 @@ def payment():
     # if request.method == 'POST':
     global order_id
     order_id = 'WOX49fbe696e1' + str(random.randint(1000,9999))
-    amount = "450.00"
+    amount = str(450.00 * no_of_seats)
     # order_date = int(time.time())
     order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
     # print(order_date)
@@ -897,7 +904,7 @@ def payment():
         print('Order created successfully')
         print(decode_jwt_signature(response.text, secret_key, 'HS256', headers))
         # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
-        return render_template('payment_page.html', flow_config=flow_config)
+        return render_template('payment_page.html', flow_config=flow_config, no_of_seats=no_of_seats)
     else:
         return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
 
