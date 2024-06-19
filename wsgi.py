@@ -25,8 +25,9 @@ import pytz
 import random
 import requests
 import os
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import load_dotenv, find_dotenv
+dotenv_path = find_dotenv()
+load_dotenv(dotenv_path, override=True)
 import time
 app = Flask(__name__)
 
@@ -34,6 +35,13 @@ app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = "super-secret" 
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+# global order_id
+# client_id = 'bduatv2apt'
+client_id = os.getenv('CLIENT_ID')
+secret_key = os.getenv('SECRET_KEY')
+mid = os.getenv('MERCHANT_ID')
+CREATE_API_ENDPOINT = os.getenv('CREATE_API_ENDPOINT')
+TXGET_API_ENDPOINT = os.getenv('TXGET_API_ENDPOINT')
 
 from_ = "woxsenailab@gmail.com"
 pwd = "ycoviljsqtfrtoul"
@@ -690,11 +698,6 @@ def thank_you():
 def close_popup():
     return render_template('close_popup.html')
 
-# global order_id
-# client_id = 'bduatv2apt'
-client_id = os.getenv('CLIENT_ID')
-secret_key = os.getenv('SECRET_KEY')
-mid = os.getenv('MERCHANT_ID')
 
 
 @app.route('/txn_response', methods=['GET', 'POST'])
@@ -706,11 +709,11 @@ def txn_response():
             "alg": "HS256"
         }
     payload = {
-                "mercid":"BDUATV2APT",
+                "mercid": mid,
                 "orderid": order_id,
                 } 
     response = requests.post(
-            'https://uat1.billdesk.com/u2/payments/ve1_2/transactions/get',
+            TXGET_API_ENDPOINT,
             headers={
                 'Content-Type': 'application/jose',
                 'Accept' : 'application/jose',
@@ -825,7 +828,8 @@ def payment():
     # if request.method == 'POST':
     global order_id
     order_id = 'WOX49fbe696e1' + str(random.randint(1000,9999))
-    amount = str(450.00 * no_of_seats)
+    # amount = str(450.00 * no_of_seats)
+    amount = str(1.00)
     # order_date = int(time.time())
     order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
     # print(order_date)
@@ -843,7 +847,7 @@ def payment():
     item_code = 'DIRECT'
     device = {
         "init_channel": "internet",
-        "ip": "10.7.0.22",
+        "ip": "10.108.4.249",
         "user_agent": "Mozilla/5.0",
         "accept_header": "text/html",
     }
@@ -867,30 +871,36 @@ def payment():
 
     jws_request = jws_encode(headers, payload, secret_key, 'HS256')
     # print(F'JWT Encoded token : {jws_request}')
-
+    bd_trace_id = str(int(time.time())) + 'ABCD12345'
+    bd_timestamp = str(datetime.now().strftime("%Y%m%d%H%M%S"))
     response = requests.post(
-        'https://uat1.billdesk.com/u2/payments/ve1_2/orders/create',
+        CREATE_API_ENDPOINT,
         headers={
             'Content-Type': 'application/jose',
             'Accept' : 'application/jose',
-            'BD-Traceid': str(int(time.time())) + 'ABCD12345',
-            'BD-Timestamp': str(datetime.now().strftime("%Y%m%d%H%M%S"))
+            'BD-Traceid': bd_trace_id,
+            'BD-Timestamp': bd_timestamp 
             # 'Authorization': jws_encode(headers, payload, secret_key, 'HS256')
         },
         data=jws_request
     )
-    # print(response.text)
+    print(F"Create Order API endpoint : {CREATE_API_ENDPOINT}")
+    print(F"Original encoded request string : {jws_request}")
+    print(F"Response.text : {response.text}")
+    print(F"Trace ID : {bd_trace_id}")
+    print(F"Timestamp : {bd_timestamp}")
+
     order_response = decode_jwt_signature(response.text, secret_key, 'HS256', headers)
-    # print(order_response)
+    print(F"Order Response : {order_response}")
     flow_config = {
-        "merchantId": "BDUATV2APT",
+        "merchantId": mid,
         "bdOrderId": order_response["bdorderid"],
         "authToken": order_response["links"][1]["headers"]["authorization"],
         "childWindow": False,
         "returnUrl": "http://localhost:5123/txn_response",
         "retryCount": 3,
         "prefs": {
-        "payment_categories": ["card", "nb"],
+        "payment_categories": ["card", "nb", "upi"],
         "allowed_bins": ["459150", "525211"]
         },
         "netBanking":{
