@@ -497,6 +497,8 @@ def mail_details():
         
         dict_result = [dict(zip([key[0] for key in cursor.description], row)) for row in result]
         print(F"dict result in mail debugging for tx_id: {dict_result}")
+        print("sending extra mail to transport@woxsen.edu.in")
+        send_extra_mail_to_transport(dict_result[0], decoded_additional_details)
         for dct in dict_result:
             send_confirmation_mail(dct, decoded_additional_details)
             # print(F"dict : {dct['passenger_email']}")
@@ -737,6 +739,11 @@ def txn_response():
     else:
         return render_template('Payment_Failed.html')
 
+@app.route("/temp_pass_through")
+@jwt_or_redirect()
+def temp_pass_through():
+    return render_template('savetodb.html')
+
 @app.route("/thank_u", methods=["POST"])
 @jwt_or_redirect()
 def thank_u():
@@ -784,6 +791,8 @@ def thank_u():
     update_query = "INSERT INTO reservation (bus_id, date, seat,user_id, p_name,p_email, p_school, p_id,p_phone, day_type,transaction_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
     
     seat_nos = []
+    # tx_id = "2345678" # temp_pass_through
+
     print(F"appending tx id : {tx_id}")
     transaction_id = tx_id
     for index, passenger in enumerate(booking['passengers'],start=1):
@@ -828,8 +837,8 @@ def payment():
     # if request.method == 'POST':
     global order_id
     order_id = 'WOX49fbe696e1' + str(random.randint(1000,9999))
-    # amount = str(450.00 * no_of_seats)
-    amount = str(1.00)
+    amount = str(450.00 * no_of_seats)
+    # amount = str(1.00)
     # order_date = int(time.time())
     order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
     # print(order_date)
@@ -932,6 +941,41 @@ Driver Details: {decoded_additional_details}
     decoded = unquote(body)
     print(F"sending data : {decoded}")
     # pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 10, tab_close=True)
+
+def send_extra_mail_to_transport(dct, decoded_additional_details):
+    print("Sending Extra mail to transport@woxsen.edu.in")
+    print(decoded_additional_details)
+    decoded_additional_details_html = "<br>".join(decoded_additional_details.split("\n"))
+    msg = MIMEMultipart()
+    
+    msg["From"] = from_
+    # msg["To"] = "transport@woxsen.edu.in"
+    msg["To"] = "kotagiritarun@kgr.ac.in"
+    msg["Subject"] = "Woxsen Bus Booking Confirmation"
+    
+    
+    body = f"""
+    <h1>Hi Srikanth, Below are the details shared to students</h1>
+    <p>Thank you for booking with Woxsen Bus. Your booking details are as follows:</p>
+    <p><b>Booking Date</b>: {dct['date']}</p>    
+    <p><b>Bus Number</b>: {dct['bus_number']}</p>
+    <p><b>Transaction ID</b>: transaction ID</p>
+    <p><b>Driver Details</b>:<br> {decoded_additional_details_html}</p>
+    """
+    
+    msgHtml = MIMEText(body, "html")
+    
+    msg.attach(msgHtml)
+    
+    conn = smtplib.SMTP("smtp.gmail.com", 587)
+    conn.starttls()
+    
+    conn.login(from_, pwd)
+
+    conn.sendmail(from_, msg["To"], msg.as_string())
+    print("Sent mail.")
+    
+    conn.close()
 
 def send_confirmation_mail(dct, decoded_additional_details):
     print(decoded_additional_details)
