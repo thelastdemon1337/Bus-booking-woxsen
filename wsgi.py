@@ -733,7 +733,7 @@ def txn_response():
     tx_id = jwt_txn_response["transactionid"]
     print(auth_status, transaction_status, tx_id)
     if auth_status == '0300' and transaction_status == 'success':
-            print(F'Transaction ID : {tx_id}')
+            print(F'Transaction Success\nTransaction ID : {tx_id}')
             # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
             return render_template('savetodb.html')
     else:
@@ -819,7 +819,7 @@ def thank_u():
 
     save()
     close()
-
+    print("Successfully completed the process, showing thankyou.html")
     return render_template('thankyou.html')
     # return redirect(url_for("logout"))
 
@@ -837,7 +837,7 @@ def payment():
     # if request.method == 'POST':
     global order_id
     order_id = 'WOX49fbe696e1' + str(random.randint(1000,9999))
-    amount = str(450.00 * no_of_seats)
+    amount = str(1.00 * no_of_seats)
     # amount = str(1.00)
     # order_date = int(time.time())
     order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
