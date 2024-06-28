@@ -949,8 +949,8 @@ def send_extra_mail_to_transport(dct, decoded_additional_details):
     msg = MIMEMultipart()
     
     msg["From"] = from_
-    # msg["To"] = "transport@woxsen.edu.in"
-    msg["To"] = "kotagiritarun@kgr.ac.in"
+    msg["To"] = "transport@woxsen.edu.in"
+    # msg["To"] = "kotagiritarun@kgr.ac.in"
     msg["Subject"] = "Woxsen Bus Booking Confirmation"
     
     
