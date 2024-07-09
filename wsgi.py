@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify,redirect, url_for,flash, send_file
+from flask import Flask, render_template, request, jsonify,redirect, url_for,flash, send_file, session
 from werkzeug.wrappers.response import Response
 import sqlite3
 from functools import wraps
@@ -32,10 +32,15 @@ import time
 app = Flask(__name__)
 
 
+# global variables
+no_of_seats = 1
+order_id = None
+tx_id = None
+
+app.secret_key = 'WoxsenUniversity'
 app.config["JWT_SECRET_KEY"] = "super-secret" 
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-# global order_id
 # client_id = 'bduatv2apt'
 client_id = os.getenv('CLIENT_ID')
 secret_key = os.getenv('SECRET_KEY')
@@ -452,7 +457,7 @@ def home():
     
     # Create time objects for the desired time range 8:30 to 4 PM
     start_time = dt_time(8, 30)
-    end_time = dt_time(18, 0)
+    end_time = dt_time(23, 0) # change back time to 18
     
     # Check if it's Friday (weekday 4) or Saturday (weekday 5)
     if datetime.today().weekday() in [0, 1, 2, 3, 4, 5] and (start_time <= current_time <= end_time):
@@ -700,144 +705,16 @@ def thank_you():
 def close_popup():
     return render_template('close_popup.html')
 
-
-
-@app.route('/txn_response', methods=['GET', 'POST'])
-def txn_response():
-    print("Hit txn Route")
-    print(F"OID from outside : {order_id}")
-    headers = {
-            "clientid": client_id,
-            "alg": "HS256"
-        }
-    payload = {
-                "mercid": mid,
-                "orderid": order_id,
-                } 
-    response = requests.post(
-            TXGET_API_ENDPOINT,
-            headers={
-                'Content-Type': 'application/jose',
-                'Accept' : 'application/jose',
-                'BD-Traceid': str(int(time.time())) + 'ABCD12345',
-                'BD-Timestamp': str(datetime.now().strftime("%Y%m%d%H%M%S")),
-                # 'Authorization': jws_encode(headers, payload, secret_key, 'HS256')
-            },
-            data=jws_encode(headers=headers,payload=payload, secret_key=secret_key, algorithm='HS256')
-        )
-    # print(response.text)
-    jwt_txn_response = decode_jwt_signature(response.text, secret_key, 'HS256', headers)
-    auth_status = str(jwt_txn_response["auth_status"] )
-    transaction_status = jwt_txn_response["transaction_error_type"]
-    global tx_id
-    tx_id = jwt_txn_response["transactionid"]
-    print(auth_status, transaction_status, tx_id)
-    if auth_status == '0300' and transaction_status == 'success':
-            print(F'Transaction Success\nTransaction ID : {tx_id}')
-            # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
-            return render_template('savetodb.html')
-    else:
-        return render_template('Payment_Failed.html')
-
-@app.route("/temp_pass_through")
-@jwt_or_redirect()
-def temp_pass_through():
-    return render_template('savetodb.html')
-
-@app.route("/thank_u", methods=["POST"])
-@jwt_or_redirect()
-def thank_u():
-    user = get_jwt_identity()
-    print("Last but latest route")
-    print(user)
-    user_id = user["id"]
-    form_data = request.form
-    
-    booking = json.loads(form_data.get("booking"))
-    
-    """
-    {
-        'bus_id': '2', 
-        'seats': 1, 
-        'date': '2023-10-05', 
-        'passengers': [{'name': 'Tarun Kotagiri', 
-        'email': 'tarun.kotagiri@woxsen.edu.in', 
-        'school': 'School of Business', 
-        'studentId': '12345678', 
-        'phone': '7032611447'}], 
-        'available_seats': '0', 
-        'day_type': 'home', 
-        'upi_id': 'test@ybl'
-        
-    }
-    
-    """
-    print("Printing latest booking object from savetodb page")
-    print(booking)
-    booking_date= booking["date"]
-    
-    cursor, save, close = connect_db()
-    
-    # get the available seats for the given bus and date
-    query  = f"SELECT id FROM reservation WHERE date LIKE '%%{booking_date}%%' and bus_id = {booking['bus_id']} and day_type = '{booking['day_type']}'"
-    
-    cursor.execute(query)
-    
-    print(F'first db call output: {cursor.fetchall()}')
-
-    total_occuiped_seats = len(cursor.fetchall())
-        
-    # update reservation table with the new reservation
-    update_query = "INSERT INTO reservation (bus_id, date, seat,user_id, p_name,p_email, p_school, p_id,p_phone, day_type,transaction_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-    
-    seat_nos = []
-    # tx_id = "2345678" # temp_pass_through
-
-    print(F"appending tx id : {tx_id}")
-    transaction_id = tx_id
-    for index, passenger in enumerate(booking['passengers'],start=1):
-        seat_no = f"L{total_occuiped_seats + index}"
-        seat_nos.append(seat_no)
-        available_seats = booking["available_seats"]
-        print(F"available_seats : {available_seats}")
-        if int(available_seats) <= 0: # mod_new_bus
-            print('Making new bus with dummy bus number')
-            if booking["bus_id"] == "1":
-                booking["bus_id"] = "1.1"
-            if booking["bus_id"] == "2":
-                booking["bus_id"] = "2.1"
-        cursor.execute(update_query, (booking["bus_id"], booking_date, seat_no, user_id, passenger['name'], passenger['email'], passenger['school'], passenger['studentId'],passenger["phone"],booking['day_type'], transaction_id))
-
-    # get bus number from bus table
-    query = "SELECT bus_number FROM bus WHERE route_id = ?"
-    print(F"fetching busNumber with busID : {booking['bus_id']}")
-    cursor.execute(query, (booking["bus_id"],))
-
-    bus_number = cursor.fetchone()[0]
-    print(F"Bus_Number : {bus_number}")
-    
-
-    save()
-    close()
-    print("Successfully completed the process, showing thankyou.html")
-    return render_template('thankyou.html')
-    # return redirect(url_for("logout"))
-
-@app.route("/get_seat_no", methods=["POST", "GET"])
-@jwt_or_redirect()
-def get_seat_no():
-    global no_of_seats
-    no_of_seats = int(request.json.get('no_seats'))
-    print(F"received no of seats : {no_of_seats}, format : {type(no_of_seats)}")
-    return 'Successfully recieved by the python server', 200
-
 @app.route("/payment", methods=["POST", "GET"])
 @jwt_or_redirect()
 def payment():
     # if request.method == 'POST':
-    global order_id
+    print("New_ Entered /payment")
+    global order_id, no_of_seats
     order_id = 'WOX49fbe696e1' + str(random.randint(1000,9999))
+    print(F"Checking order id right after setting it:\norder_id : {order_id}")
     amount = str(1.00 * no_of_seats)
+    print(F"Amount : {amount}")
     # amount = str(1.00)
     # order_date = int(time.time())
     order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
@@ -894,8 +771,8 @@ def payment():
         data=jws_request
     )
     print(F"Create Order API endpoint : {CREATE_API_ENDPOINT}")
-    print(F"Original encoded request string : {jws_request}")
-    print(F"Response.text : {response.text}")
+    # print(F"Original encoded request string : {jws_request}")
+    # print(F"Response.text : {response.text}")
     print(F"Trace ID : {bd_trace_id}")
     print(F"Timestamp : {bd_timestamp}")
 
@@ -922,11 +799,166 @@ def payment():
     if response.status_code == 200:
         print('Order created successfully')
         print(decode_jwt_signature(response.text, secret_key, 'HS256', headers))
+        print(F"Before Modifying from response object, checking global order id\norder_id : {order_id}")
+        session['order_id_new'] = order_id
+        print(F"Checking if session varialble is set : {session.get('order_id_new')}")
+        # modify order_id by parsing from response.text
         # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
         return render_template('payment_page.html', flow_config=flow_config, no_of_seats=no_of_seats)
     else:
         return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
 
+
+@app.route('/txn_response', methods=['GET', 'POST'])
+@jwt_or_redirect()
+def txn_response():
+    global order_id
+    print(F"Global Order Id : {order_id}")
+    order_id_new = session.get('order_id_new')
+    print(F"Purely printing order_id_new : {session.get('order_id_new')}")
+    global client_id
+    global mid
+    global secret_key
+    print("Hit txn Route")
+    # print(F"Printing globals():\n{globals()}")
+    print(F"Data from outside : \n order_id : {order_id}\nclient_id : {client_id}\nmid : {mid}\nsecret_key : {secret_key}")
+    headers = {
+            "clientid": client_id,
+            "alg": "HS256"
+        }
+    payload = {
+                "mercid": mid,
+                "orderid": order_id,
+                } 
+    response = requests.post(
+            TXGET_API_ENDPOINT,
+            headers={
+                'Content-Type': 'application/jose',
+                'Accept' : 'application/jose',
+                'BD-Traceid': str(int(time.time())) + 'ABCD12345',
+                'BD-Timestamp': str(datetime.now().strftime("%Y%m%d%H%M%S")),
+                # 'Authorization': jws_encode(headers, payload, secret_key, 'HS256')
+            },
+            data=jws_encode(headers=headers,payload=payload, secret_key=secret_key, algorithm='HS256')
+        )
+    print("Debugging new issue inside /txn response\nBelow is the response from txget api endpoint")
+    # print(response.text)
+    jwt_txn_response = decode_jwt_signature(response.text, secret_key, 'HS256', headers)
+    print(jwt_txn_response)
+    auth_status = str(jwt_txn_response["auth_status"] )
+    transaction_status = jwt_txn_response["transaction_error_type"]
+    global tx_id
+    tx_id = jwt_txn_response["transactionid"]
+    print(auth_status, transaction_status, tx_id)
+    if auth_status == '0300' and transaction_status == 'success':
+            print(F"Type of tx_id before conversion : {tx_id} : {type(tx_id)}")
+            tx_id = str(tx_id)
+            print(F'Transaction Success\nTransaction ID : {tx_id}')
+            # return decode_jwt_signature(response.text, secret_key, 'HS256', headers)
+            return render_template('savetodb.html', tx_id=tx_id)
+    else:
+        return render_template('Payment_Failed.html')
+
+@app.route("/temp_pass_through")
+@jwt_or_redirect()
+def temp_pass_through():
+    tx_id = "1234567890"
+    print(F"Sending from temp_pass_through : type - {tx_id} - {type(tx_id)}")
+    return render_template('savetodb.html', tx_id=tx_id)
+
+@app.route("/thank_u", methods=["POST"])
+@jwt_or_redirect()
+def thank_u():
+    user = get_jwt_identity()
+    print("Last but latest route Debuggin tx_id in /thank_u")
+    print(user)
+    user_id = user["id"]
+    form_data = request.form
+    print(F"Form Data : {form_data}")
+    
+    booking = json.loads(form_data.get("booking"))
+
+    tx_id_new = form_data.get("txidnew")
+
+    print(F"Booking : {booking}")
+    print("Up to date changed to .get from json.loads as it's a string and not a json object.")
+    print(F"Latest tx id : {tx_id_new}")
+
+    """
+    {
+        'bus_id': '2', 
+        'seats': 1, 
+        'date': '2023-10-05', 
+        'passengers': [{'name': 'Tarun Kotagiri', 
+        'email': 'tarun.kotagiri@woxsen.edu.in', 
+        'school': 'School of Business', 
+        'studentId': '12345678', 
+        'phone': '7032611447'}], 
+        'available_seats': '0', 
+        'day_type': 'home', 
+        'upi_id': 'test@ybl'
+        
+    }
+    
+    """
+    print("Printing latest booking object from savetodb page")
+    print(booking)
+    booking_date= booking["date"]
+    
+    cursor, save, close = connect_db()
+    
+    # get the available seats for the given bus and date
+    query  = f"SELECT id FROM reservation WHERE date LIKE '%%{booking_date}%%' and bus_id = {booking['bus_id']} and day_type = '{booking['day_type']}'"
+    
+    cursor.execute(query)
+    
+    print(F'first db call output: {cursor.fetchall()}')
+
+    total_occuiped_seats = len(cursor.fetchall())
+        
+    # update reservation table with the new reservation
+    update_query = "INSERT INTO reservation (bus_id, date, seat,user_id, p_name,p_email, p_school, p_id,p_phone, day_type,transaction_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+    
+    seat_nos = []
+    # tx_id = "2345678" # temp_pass_through
+    # global tx_id
+    print(F"appending tx id : {tx_id_new}")
+    transaction_id = tx_id_new
+    for index, passenger in enumerate(booking['passengers'],start=1):
+        seat_no = f"L{total_occuiped_seats + index}"
+        seat_nos.append(seat_no)
+        available_seats = booking["available_seats"]
+        print(F"available_seats : {available_seats}")
+        if int(available_seats) <= 0: # mod_new_bus
+            print('Making new bus with dummy bus number')
+            if booking["bus_id"] == "1":
+                booking["bus_id"] = "1.1"
+            if booking["bus_id"] == "2":
+                booking["bus_id"] = "2.1"
+        cursor.execute(update_query, (booking["bus_id"], booking_date, seat_no, user_id, passenger['name'], passenger['email'], passenger['school'], passenger['studentId'],passenger["phone"],booking['day_type'], transaction_id))
+
+    # get bus number from bus table
+    query = "SELECT bus_number FROM bus WHERE route_id = ?"
+    print(F"fetching busNumber with busID : {booking['bus_id']}")
+    cursor.execute(query, (booking["bus_id"],))
+
+    bus_number = cursor.fetchone()[0]
+    print(F"Bus_Number : {bus_number}")
+    
+
+    save()
+    close()
+    print("Successfully completed the process, showing thankyou.html")
+    return render_template('thankyou.html')
+    # return redirect(url_for("logout"))
+
+@app.route("/get_seat_no", methods=["POST", "GET"])
+@jwt_or_redirect()
+def get_seat_no():
+    global no_of_seats
+    no_of_seats = int(request.json.get('no_seats'))
+    print(F"received no of seats : {no_of_seats}, format : {type(no_of_seats)}")
+    return 'Successfully recieved by the python server', 200
 
 def send_whatsapp_message(dct, decoded_additional_details):
     name = dct["passenger_name"]

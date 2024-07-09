@@ -18,14 +18,17 @@
 
       // create a new input element
       const input = document.createElement("input");
-      // set its type
       input.type = "hidden";
-      // set its name
       input.name = "booking";
-      // set its value
       input.value = JSON.stringify(booking);
-      // append it to the form
       form.appendChild(input);
+
+      const inputTxId = document.createElement("input")
+      inputTxId.type = "hidden";
+      inputTxId.name = "txidnew";
+      inputTxId.value = "{{ tx_id }}";
+      form.appendChild(inputTxId);
+
 
       // form.submit();
       if (upiID == "") {
