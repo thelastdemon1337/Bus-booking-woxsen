@@ -504,11 +504,17 @@ def mail_details():
         print(F"dict result in mail debugging for tx_id: {dict_result}")
         print("sending extra mail to transport@woxsen.edu.in")
         send_extra_mail_to_transport(dict_result[0], decoded_additional_details)
-        for dct in dict_result:
-            send_confirmation_mail(dct, decoded_additional_details)
-            # print(F"dict : {dct['passenger_email']}")
-
-
+        print("Printing Bulk Mails")
+        try:
+            conn = smtplib.SMTP("smtp.gmail.com", 587)
+            conn.starttls()
+            conn.login(from_, pwd)
+            for dct in dict_result:
+                send_confirmation_mail(dct, decoded_additional_details, con=conn)
+                # print(F"dict : {dct['passenger_email']}")
+            conn.close()
+        except Exception as e:
+            print(F"Error Sending email : {str(e)}")
         return jsonify({"status": "success"}), 200
     except Exception as e:
         print(e)
@@ -720,7 +726,7 @@ def payment():
     order_date = str(datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")) + "+05:30"
     # print(order_date)
     currency = '356'
-    ru = 'http://localhost:5123/txn_response'
+    ru = 'http://0.0.0.0:5123/txn_response'
     additional_info = {
         "additional_info1": "B200910EC",
         "additional_info2": "Anand",
@@ -783,7 +789,7 @@ def payment():
         "bdOrderId": order_response["bdorderid"],
         "authToken": order_response["links"][1]["headers"]["authorization"],
         "childWindow": False,
-        "returnUrl": "http://localhost:5123/txn_response",
+        "returnUrl": "http://0.0.0.0:5123/txn_response",
         "retryCount": 3,
         "prefs": {
         "payment_categories": ["card", "nb", "upi"],
@@ -821,14 +827,14 @@ def txn_response():
     global secret_key
     print("Hit txn Route")
     # print(F"Printing globals():\n{globals()}")
-    print(F"Data from outside : \n order_id : {order_id}\nclient_id : {client_id}\nmid : {mid}\nsecret_key : {secret_key}")
+    print(F"Data from outside : \n order_id : {order_id_new}\nclient_id : {client_id}\nmid : {mid}\nsecret_key : {secret_key}")
     headers = {
             "clientid": client_id,
             "alg": "HS256"
         }
     payload = {
                 "mercid": mid,
-                "orderid": order_id,
+                "orderid": order_id_new,
                 } 
     response = requests.post(
             TXGET_API_ENDPOINT,
@@ -975,14 +981,14 @@ Driver Details: {decoded_additional_details}
     # pywhatkit.sendwhatmsg_instantly(phoneNumber, decoded, 10, tab_close=True)
 
 def send_extra_mail_to_transport(dct, decoded_additional_details):
-    print("Sending Extra mail to transport@woxsen.edu.in")
+    print("def_send_extra_mail initiated")
     print(decoded_additional_details)
     decoded_additional_details_html = "<br>".join(decoded_additional_details.split("\n"))
     msg = MIMEMultipart()
     
     msg["From"] = from_
-    msg["To"] = "transport@woxsen.edu.in"
-    # msg["To"] = "kotagiritarun@kgr.ac.in"
+    # msg["To"] = "transport@woxsen.edu.in"
+    msg["To"] = "kotagiritarun@kgr.ac.in"
     msg["Subject"] = "Woxsen Bus Booking Confirmation"
     
     
@@ -1005,11 +1011,11 @@ def send_extra_mail_to_transport(dct, decoded_additional_details):
     conn.login(from_, pwd)
 
     conn.sendmail(from_, msg["To"], msg.as_string())
-    print("Sent mail.")
+    print(F"Sent mail to {msg['To']}.")
     
     conn.close()
 
-def send_confirmation_mail(dct, decoded_additional_details):
+def send_confirmation_mail(dct, decoded_additional_details, con):
     print(decoded_additional_details)
     decoded_additional_details_html = "<br>".join(decoded_additional_details.split("\n"))
     msg = MIMEMultipart()
@@ -1035,15 +1041,19 @@ def send_confirmation_mail(dct, decoded_additional_details):
     
     msg.attach(msgHtml)
     
-    conn = smtplib.SMTP("smtp.gmail.com", 587)
-    conn.starttls()
+    # conn = smtplib.SMTP("smtp.gmail.com", 587)
+    # conn.starttls()
     
-    conn.login(from_, pwd)
+    # conn.login(from_, pwd)
 
-    conn.sendmail(from_, msg["To"], msg.as_string())
-    print("Sent mail.")
+    # conn.sendmail(from_, msg["To"], msg.as_string())
+    try:
+        con.sendmail(from_, msg["To"], msg.as_string())
+    except Exception as e:
+        print(F"Sending mail failed with exception : {str(e)}")
+    print(F"Sent mail to {msg['To']}.")
     
-    conn.close()
+    # conn.close()
     
     
     
